@@ -15,7 +15,7 @@ public class Set {
 	private String  description;
 	private Author owner;
 	private String status;
-	private List<Question> questions;
+	private List<Exercise> exercises;
 	
 	
 }

@@ -17,44 +17,44 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.juezlti.repository.models.Question;
+import com.juezlti.repository.models.Exercise;
 import com.juezlti.repository.models.Test;
-import com.juezlti.repository.repository.QuestionRepository;
+import com.juezlti.repository.repository.ExerciseRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @Slf4j
-@RequestMapping("/api/questions")
-public class QuestionController {
+@RequestMapping("/api/exercises")
+public class ExerciseController {
 	
 
 	@Autowired
-    private QuestionRepository questionRepository;
+    private ExerciseRepository exerciseRepository;
 	
 	
-	@PostMapping(path = "/createQuestion")
-	public String createQuestions(@RequestBody String questionJson) {
+	@PostMapping(path = "/createExercise")
+	public String createExercises(@RequestBody String exerciseJson) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
 				false);
-		List<Question> questions = new ArrayList<>();
+		List<Exercise> exercises = new ArrayList<>();
 		JSONArray jsonArray = new JSONArray();
 		String jsonResponse="";
-		Question createdQuestion;
+		Exercise createdExercise;
 		JSONObject jsonObject = null;
 
 		try {
-			questions = objectMapper.readValue(questionJson, new TypeReference<List<Question>>() {
+			exercises = objectMapper.readValue(exerciseJson, new TypeReference<List<Exercise>>() {
 			});
-			for (Question q : questions) {
+			for (Exercise q : exercises) {
 				try {
 						
-					createdQuestion = questionRepository.save(q);
-					 jsonObject = new JSONObject(createdQuestion);
+					createdExercise = exerciseRepository.save(q);
+					 jsonObject = new JSONObject(createdExercise);
 
 				} catch (Exception ex) {
-					log.error("Unexpected error trying to create question {}", ex);
-					return new String("Unexpected error trying to create question " + HttpStatus.BAD_REQUEST);
+					log.error("Unexpected error trying to create exercise {}", ex);
+					return new String("Unexpected error trying to create exercise " + HttpStatus.BAD_REQUEST);
 				}
 			}
 
@@ -67,45 +67,45 @@ public class QuestionController {
 		return jsonResponse;
 	}
 
-	@PostMapping(path = "/getAllQuestions")
-	public List<Question> getAllQuestions(@RequestParam("questionIds") String questionIds) {
-		List<String> questionsIdArr = Arrays.asList(questionIds.split(","));
-		return questionRepository.findByIdIn(questionsIdArr).stream().map(el -> {
-			boolean isSql = Optional.ofNullable(el.getQuestion_sql_type()).isPresent();
-			boolean isCode = Optional.ofNullable(el.getQuestion_language()).isPresent();
+	@PostMapping(path = "/getAllExercises")
+	public List<Exercise> getAllExercises(@RequestParam("exerciseIds") String exerciseIds) {
+		List<String> exercisesIdArr = Arrays.asList(exerciseIds.split(","));
+		return exerciseRepository.findByIdIn(exercisesIdArr).stream().map(el -> {
+			boolean isSql = Optional.ofNullable(el.getExercise_sql_type()).isPresent();
+			boolean isCode = Optional.ofNullable(el.getExercise_language()).isPresent();
 			
-			el.setCodeQuestion(!isSql && isCode);
-			el.setSqlQuestion(isSql && !isCode);
+			el.setCodeExercise(!isSql && isCode);
+			el.setSqlExercise(isSql && !isCode);
 			return el;
 		}).collect(Collectors.toList());
 	}
 	
-	@GetMapping(path = "/getAllQuestions/{value}")
-	public List<List> getAllQuestionsPaged(@PathVariable("value") Integer page) {
+	@GetMapping(path = "/getAllExercises/{value}")
+	public List<List> getAllExercisesPaged(@PathVariable("value") Integer page) {
 		
-		double total = Math.ceil((double)questionRepository.findAllQuestions()/10);
+		double total = Math.ceil((double)exerciseRepository.findAllExercises()/10);
 		List<List> listas = new ArrayList<List>();
 		List<Double> total1 = new ArrayList<Double>();
 		total1.add(total);
-		List<Question> questions = questionRepository.findAllQuestions(PageRequest.of(page, 10));
-		listas.add(questions);
+		List<Exercise> exercises = exerciseRepository.findAllExercises(PageRequest.of(page, 10));
+		listas.add(exercises);
 		listas.add(total1);
 
 		return listas;
 	}
 	
 	@GetMapping(path = "/getKeywords/{value}")
-	public List<Question> getKeywords(@PathVariable("value") String keywords) {
+	public List<Exercise> getKeywords(@PathVariable("value") String keywords) {
 	
 		List<String> list = new ArrayList<String>();
 		list.add(keywords);
-		List<Question> questions = questionRepository.findByKeywords(list);
+		List<Exercise> exercises = exerciseRepository.findByKeywords(list);
 
-		return questions;
+		return exercises;
 	}
 	
-	@GetMapping(path = "/getTestQuestionBy4Values/{value}")
-	public List<List> findByQuestions4Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
+	@GetMapping(path = "/getTestExerciseBy4Values/{value}")
+	public List<List> findByExercises4Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
 		List<String> list = value.get(1);
 		String parameter2 = value.get(2).get(0);
@@ -119,15 +119,15 @@ public class QuestionController {
 		
 		if(parameter4.equals("averageGrade") ) {
 			String list4 = value.get(7).get(0);
-			total = Math.ceil((double)questionRepository.findByQuestions4ValuesCount(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4)/10);
+			total = Math.ceil((double)exerciseRepository.findByExercises4ValuesCount(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4)/10);
 			total1.add(total);
-			List<Question> tests = questionRepository.findByQuestions4Values(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4, PageRequest.of(page, 10));
+			List<Exercise> tests = exerciseRepository.findByExercises4Values(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4, PageRequest.of(page, 10));
 			listas.add(tests);
 		}else {
 			List<String> list4 = value.get(7);
-			total = Math.ceil((double)questionRepository.findByQuestions4ValuesCount(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4)/10);
+			total = Math.ceil((double)exerciseRepository.findByExercises4ValuesCount(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4)/10);
 			total1.add(total);
-			List<Question> tests = questionRepository.findByQuestions4Values(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4, PageRequest.of(page, 10));
+			List<Exercise> tests = exerciseRepository.findByExercises4Values(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4, PageRequest.of(page, 10));
 			listas.add(tests);
 		}
 		listas.add(total1);
@@ -135,8 +135,8 @@ public class QuestionController {
 	}
 	
 	
-	@GetMapping(path = "/getTestQuestionBy3Values/{value}")
-	public List<List> findByQuestions3Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
+	@GetMapping(path = "/getTestExerciseBy3Values/{value}")
+	public List<List> findByExercises3Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
 		List<String> list = value.get(1);
 		String parameter2 = value.get(2).get(0);
@@ -148,15 +148,15 @@ public class QuestionController {
 		
 		if(parameter3.equals("averageGrade") ) {
 			String list3 = value.get(5).get(0);
-			total = Math.ceil((double)questionRepository.findByQuestions3ValuesCount(parameter, list, parameter2, list2, parameter3, list3)/10);
+			total = Math.ceil((double)exerciseRepository.findByExercises3ValuesCount(parameter, list, parameter2, list2, parameter3, list3)/10);
 			total1.add(total);
-			List<Question> tests = questionRepository.findByQuestions3Values(parameter, list, parameter2, list2, parameter3, list3, PageRequest.of(page, 10));
+			List<Exercise> tests = exerciseRepository.findByExercises3Values(parameter, list, parameter2, list2, parameter3, list3, PageRequest.of(page, 10));
 			listas.add(tests);
 		}else {
 			List<String> list3 = value.get(5);
-			total = Math.ceil((double)questionRepository.findByQuestions3ValuesCount(parameter, list, parameter2, list2, parameter3, list3)/10);
+			total = Math.ceil((double)exerciseRepository.findByExercises3ValuesCount(parameter, list, parameter2, list2, parameter3, list3)/10);
 			total1.add(total);
-			List<Question> tests = questionRepository.findByQuestions3Values(parameter, list, parameter2, list2, parameter3, list3, PageRequest.of(page, 10));
+			List<Exercise> tests = exerciseRepository.findByExercises3Values(parameter, list, parameter2, list2, parameter3, list3, PageRequest.of(page, 10));
 			listas.add(tests);
 		}
 		listas.add(total1);
@@ -164,8 +164,8 @@ public class QuestionController {
 	}
 	
 	
-	@GetMapping(path = "/getTestQuestionByValues/{value}")
-	public List<List> findByQuestions2Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
+	@GetMapping(path = "/getTestExerciseByValues/{value}")
+	public List<List> findByExercises2Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
 		List<String> list = value.get(1);
 		String parameter2 = value.get(2).get(0);
@@ -175,15 +175,15 @@ public class QuestionController {
 		
 		if(parameter2.equals("averageGrade") ) {
 			String list2 = value.get(3).get(0);
-			total = Math.ceil((double)questionRepository.findByQuestions2ValuesCount(parameter, list, parameter2, list2)/10);
+			total = Math.ceil((double)exerciseRepository.findByExercises2ValuesCount(parameter, list, parameter2, list2)/10);
 			total1.add(total);
-			List<Question> tests =questionRepository.findByQuestions2Values(parameter, list, parameter2, list2, PageRequest.of(page, 10));
+			List<Exercise> tests =exerciseRepository.findByExercises2Values(parameter, list, parameter2, list2, PageRequest.of(page, 10));
 			listas.add(tests);
 		}else {
 			List<String> list2 = value.get(3);
-			total = Math.ceil((double)questionRepository.findByQuestions2ValuesCount(parameter, list, parameter2, list2)/10);
+			total = Math.ceil((double)exerciseRepository.findByExercises2ValuesCount(parameter, list, parameter2, list2)/10);
 			total1.add(total);
-			List<Question> tests = questionRepository.findByQuestions2Values(parameter, list, parameter2, list2, PageRequest.of(page, 10));
+			List<Exercise> tests = exerciseRepository.findByExercises2Values(parameter, list, parameter2, list2, PageRequest.of(page, 10));
 			listas.add(tests);
 		}
 		listas.add(total1);
@@ -206,15 +206,15 @@ public class QuestionController {
 		String type = value.get(1).get(0);
 	if( score) {
 		String list = value.get(0).get(0);
-		total = Math.ceil((double)questionRepository.QueryFindByValueCount( type, list)/10);
+		total = Math.ceil((double)exerciseRepository.QueryFindByValueCount( type, list)/10);
 		total1.add(total);
-		List<Question> tests = questionRepository.QueryFindByValue( type, list, PageRequest.of(page, 10));
+		List<Exercise> tests = exerciseRepository.QueryFindByValue( type, list, PageRequest.of(page, 10));
 		listas.add(tests);
 	}else {
 		List<String> list = value.get(0);
-		total = Math.ceil((double)questionRepository.QueryFindByValueCount( type, list)/10);
+		total = Math.ceil((double)exerciseRepository.QueryFindByValueCount( type, list)/10);
 		total1.add(total);
-		List<Question> tests = questionRepository.QueryFindByValue( type, list, PageRequest.of(page, 10));
+		List<Exercise> tests = exerciseRepository.QueryFindByValue( type, list, PageRequest.of(page, 10));
 		listas.add(tests);
 	}
 	

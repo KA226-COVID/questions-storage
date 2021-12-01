@@ -17,7 +17,7 @@ public class JsonConverter {
 		try {
 			jsonObject.put("code", code.toString());
 			jsonObject.put("fail", fail);
-			jsonObject.put("question", objectMapper.writeValueAsString(objeto));
+			jsonObject.put("exercise", objectMapper.writeValueAsString(objeto));
 			System.out.println(jsonObject);
 		} catch (JsonProcessingException e) {
 			// TODO Auto-generated catch block
@@ -37,7 +37,7 @@ public class JsonConverter {
 
 		try {
 			jsonObject.put("code", code.toString());
-			jsonObject.put("question", objectMapper.writeValueAsString(objeto));
+			jsonObject.put("exercise", objectMapper.writeValueAsString(objeto));
 
 		} catch (JsonProcessingException e) {
 			// TODO Auto-generated catch block

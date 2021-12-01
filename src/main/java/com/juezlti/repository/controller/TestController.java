@@ -28,9 +28,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.juezlti.repository.models.Question;
+import com.juezlti.repository.models.Exercise;
 import com.juezlti.repository.models.Test;
-import com.juezlti.repository.repository.QuestionRepository;
+import com.juezlti.repository.repository.ExerciseRepository;
 import com.juezlti.repository.repository.TestRepository;
 import com.juezlti.repository.util.JsonConverter;
 
@@ -42,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
 	@Autowired
-	private QuestionRepository questionRepository;
+	private ExerciseRepository exerciseRepository;
 
 	@Autowired
 	private TestRepository testRepository;
@@ -65,10 +65,10 @@ public class TestController {
 					String description = t.getDescription();
 					String name = t.getName();
 					String status = t.getStatus();
-					List<Question> questions = t.getQuestions();
+					List<Exercise> exercises = t.getExercises();
 
-					for (int i = 0; i < questions.size(); i++) {
-						questions.get(i).setId(new ObjectId().toString());
+					for (int i = 0; i < exercises.size(); i++) {
+						exercises.get(i).setId(new ObjectId().toString());
 					}
 
 					if (StringUtils.isBlank(name) || StringUtils.isBlank(description)) {
@@ -82,12 +82,12 @@ public class TestController {
 					newTest.setName(name);
 					newTest.setDescription(description);
 					newTest.setStatus(status);
-					newTest.setQuestions(questions);
+					newTest.setExercises(exercises);
 					createdTest = testRepository.save(newTest);
 					jsonObject = new JSONObject(createdTest);
 				} catch (Exception ex) {
-					log.error("Unexpected error trying to create question {}", ex);
-					return new String("Unexpected error trying to create question " + HttpStatus.BAD_REQUEST);
+					log.error("Unexpected error trying to create exercise {}", ex);
+					return new String("Unexpected error trying to create exercise " + HttpStatus.BAD_REQUEST);
 				}
 			}
 
@@ -117,9 +117,9 @@ public class TestController {
 		return listas;
 	}
 
-	@GetMapping(path = "/getQuestion/{value}")
-	public Question getQuestionId(@PathVariable("value") String value) {
-		return testRepository.findQuestionById(value);
+	@GetMapping(path = "/getExercise/{value}")
+	public Exercise getExerciseId(@PathVariable("value") String value) {
+		return testRepository.findExerciseById(value);
 	}
 
 	@GetMapping(path = "/getTestId/{value}")
@@ -128,32 +128,32 @@ public class TestController {
 		return testRepository.findById(value);
 	}
 
-	@GetMapping(path = "/getTestQuestionId/{value}")
-	public Test getTestQuestionId(@PathVariable("value") String value) {
+	@GetMapping(path = "/getTestExerciseId/{value}")
+	public Test getTestExerciseId(@PathVariable("value") String value) {
 
-		return testRepository.findByQuestionId(value);
+		return testRepository.findByExerciseId(value);
 	}
 
-	@GetMapping(path = "/getTestQuestionId1/{value}")
-	public Test getTestQuestionId1(@PathVariable("value") String value) {
+	@GetMapping(path = "/getTestExerciseId1/{value}")
+	public Test getTestExerciseId1(@PathVariable("value") String value) {
 
-		return testRepository.findByIdOrQuestionsId(value, value);
+		return testRepository.findByIdOrExercisesId(value, value);
 	}
 
-	@GetMapping(path = "/getTestQuestionType")
-	public List<Test> getTestQuestionType(@RequestBody List<String> value) {
+	@GetMapping(path = "/getTestExerciseType")
+	public List<Test> getTestExerciseType(@RequestBody List<String> value) {
 
-		return testRepository.findByQuestionsTypeIn(value);
+		return testRepository.findByExercisesTypeIn(value);
 	}
 
-	@GetMapping(path = "/getTestQuestionDifficulty")
-	public List<Test> getTestQuestionDifficulty(@RequestBody List<String> value) {
+	@GetMapping(path = "/getTestExerciseDifficulty")
+	public List<Test> getTestExerciseDifficulty(@RequestBody List<String> value) {
 
-		return testRepository.findByQuestionsDifficultyIn(value);
+		return testRepository.findByExercisesDifficultyIn(value);
 	}
 
-	@GetMapping(path = "/getTestQuestionBy4Values/{value}")
-	public List<List> findByQuestions4Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
+	@GetMapping(path = "/getTestExerciseBy4Values/{value}")
+	public List<List> findByExercises4Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
 		List<String> list = value.get(1);
 		String parameter2 = value.get(2).get(0);
@@ -168,18 +168,18 @@ public class TestController {
 		//if the last parameter is averageGrade take it as String else take it as List
 		if (parameter4.equals("averageGrade")) {
 			String list4 = value.get(7).get(0);
-			total = Math.ceil((double) testRepository.findByQuestions4ValuesCount(parameter, list, parameter2, list2,
+			total = Math.ceil((double) testRepository.findByExercises4ValuesCount(parameter, list, parameter2, list2,
 					parameter3, list3, parameter4, list4) / 10);
 			total1.add(total);
-			List<Test> tests = testRepository.findByQuestions4Values(parameter, list, parameter2, list2, parameter3,
+			List<Test> tests = testRepository.findByExercises4Values(parameter, list, parameter2, list2, parameter3,
 					list3, parameter4, list4, PageRequest.of(page, 10));
 			listas.add(tests);
 		} else {
 			List<String> list4 = value.get(7);
-			total = Math.ceil((double) testRepository.findByQuestions4ValuesCount(parameter, list, parameter2, list2,
+			total = Math.ceil((double) testRepository.findByExercises4ValuesCount(parameter, list, parameter2, list2,
 					parameter3, list3, parameter4, list4) / 10);
 			total1.add(total);
-			List<Test> tests = testRepository.findByQuestions4Values(parameter, list, parameter2, list2, parameter3,
+			List<Test> tests = testRepository.findByExercises4Values(parameter, list, parameter2, list2, parameter3,
 					list3, parameter4, list4, PageRequest.of(page, 10));
 			listas.add(tests);
 		}
@@ -187,8 +187,8 @@ public class TestController {
 		return listas;
 	}
 
-	@GetMapping(path = "/getTestQuestionBy3Values/{value}")
-	public List<List> findByQuestions3Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
+	@GetMapping(path = "/getTestExerciseBy3Values/{value}")
+	public List<List> findByExercises3Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
 		List<String> list = value.get(1);
 		String parameter2 = value.get(2).get(0);
@@ -201,18 +201,18 @@ public class TestController {
 		//if the last parameter is averageGrade take it as String else take it as List
 		if (parameter3.equals("averageGrade")) {
 			String list3 = value.get(5).get(0);
-			total = Math.ceil((double) testRepository.findByQuestions3ValuesCount(parameter, list, parameter2, list2,
+			total = Math.ceil((double) testRepository.findByExercises3ValuesCount(parameter, list, parameter2, list2,
 					parameter3, list3) / 10);
 			total1.add(total);
-			List<Test> tests = testRepository.findByQuestions3Values(parameter, list, parameter2, list2, parameter3,
+			List<Test> tests = testRepository.findByExercises3Values(parameter, list, parameter2, list2, parameter3,
 					list3, PageRequest.of(page, 10));
 			listas.add(tests);
 		} else {
 			List<String> list3 = value.get(5);
-			total = Math.ceil((double) testRepository.findByQuestions3ValuesCount(parameter, list, parameter2, list2,
+			total = Math.ceil((double) testRepository.findByExercises3ValuesCount(parameter, list, parameter2, list2,
 					parameter3, list3) / 10);
 			total1.add(total);
-			List<Test> tests = testRepository.findByQuestions3Values(parameter, list, parameter2, list2, parameter3,
+			List<Test> tests = testRepository.findByExercises3Values(parameter, list, parameter2, list2, parameter3,
 					list3, PageRequest.of(page, 10));
 			listas.add(tests);
 		}
@@ -220,8 +220,8 @@ public class TestController {
 		return listas;
 	}
 
-	@GetMapping(path = "/getTestQuestionByValues/{value}")
-	public List<List> findByQuestions2Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
+	@GetMapping(path = "/getTestExerciseByValues/{value}")
+	public List<List> findByExercises2Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
 		List<String> list = value.get(1);
 		String parameter2 = value.get(2).get(0);
@@ -233,17 +233,17 @@ public class TestController {
 		if (parameter2.equals("averageGrade")) {
 			String list2 = value.get(3).get(0);
 			total = Math
-					.ceil((double) testRepository.findByQuestions2ValuesCount(parameter, list, parameter2, list2) / 10);
+					.ceil((double) testRepository.findByExercises2ValuesCount(parameter, list, parameter2, list2) / 10);
 			total1.add(total);
-			List<Test> tests = testRepository.findByQuestions2Values(parameter, list, parameter2, list2,
+			List<Test> tests = testRepository.findByExercises2Values(parameter, list, parameter2, list2,
 					PageRequest.of(page, 10));
 			listas.add(tests);
 		} else {
 			List<String> list2 = value.get(3);
 			total = Math
-					.ceil((double) testRepository.findByQuestions2ValuesCount(parameter, list, parameter2, list2) / 10);
+					.ceil((double) testRepository.findByExercises2ValuesCount(parameter, list, parameter2, list2) / 10);
 			total1.add(total);
-			List<Test> tests = testRepository.findByQuestions2Values(parameter, list, parameter2, list2,
+			List<Test> tests = testRepository.findByExercises2Values(parameter, list, parameter2, list2,
 					PageRequest.of(page, 10));
 			listas.add(tests);
 		}
@@ -286,33 +286,33 @@ public class TestController {
 
 
 	@GetMapping(path = "/type")
-	public List<Question> getQuestionsType(@RequestBody List<String> value) {
+	public List<Exercise> getExercisesType(@RequestBody List<String> value) {
 
-		return questionRepository.findByTypeInIgnoreCase(value);
+		return exerciseRepository.findByTypeInIgnoreCase(value);
 	}
 
 	@GetMapping(path = "/difficulty")
-	public List<Question> getQuestionsDifficulty(@RequestBody List<String> value) {
-		return questionRepository.findByDifficultyInIgnoreCase(value);
+	public List<Exercise> getExercisesDifficulty(@RequestBody List<String> value) {
+		return exerciseRepository.findByDifficultyInIgnoreCase(value);
 	}
 
 	@GetMapping(path = "/difficultyType")
-	public List<Question> getQuestionsDifficultyType(@RequestBody List<List<String>> value) {
+	public List<Exercise> getExercisesDifficultyType(@RequestBody List<List<String>> value) {
 		List<String> difficulty = value.get(0);
 		List<String> type = value.get(1);
-		return questionRepository.findByDifficultyInIgnoreCaseAndTypeInIgnoreCase(difficulty, type);
+		return exerciseRepository.findByDifficultyInIgnoreCaseAndTypeInIgnoreCase(difficulty, type);
 	}
 
 	@GetMapping(path = "/title/{value}")
-	public List<Question> getQuestionsTitle(@PathVariable("value") String value) {
+	public List<Exercise> getExercisesTitle(@PathVariable("value") String value) {
 
-		return questionRepository.findByTitleLikeIgnoreCase(value);
+		return exerciseRepository.findByTitleLikeIgnoreCase(value);
 	}
 
 	@DeleteMapping(path = "/delete/{value}")
-	public void deleteQuestion(@PathVariable("value") String value) {
+	public void deleteExercise(@PathVariable("value") String value) {
 
-		questionRepository.deleteById(value);
+		exerciseRepository.deleteById(value);
 	}
 
 }

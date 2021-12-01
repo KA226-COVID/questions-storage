@@ -14,13 +14,13 @@ import com.juezlti.repository.models.Test;
 public interface UsageRepository extends MongoRepository<Usage, String> {
 	
 	
-	 @Query( value = "{idQuestion: {$in : ?0}, user:{userId :{$in : ?1 } } } ")
+	 @Query( value = "{idExercise: {$in : ?0}, user:{userId :{$in : ?1 } } } ")
 	  List<Usage> findByIds ( List<String> list,  List<String> list2);
 	  
-	 List<Usage> findByIdQuestionInAndUserIdInAndCtId(List<String> idQuestions, List<String> idUser, String ctId);
+	 List<Usage> findByIdExerciseInAndUserIdInAndCtId(List<String> idExercises, List<String> idUser, String ctId);
 	 
 	 int countByCtId(String ctId);
 	
-	  List<Usage> findByIdQuestionIgnoreCase(String idQuestion); 
+	  List<Usage> findByIdExerciseIgnoreCase(String idExercise); 
 	  List<Usage> findByDate(Date date); 
 	}

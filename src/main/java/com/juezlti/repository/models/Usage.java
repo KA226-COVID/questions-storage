@@ -14,7 +14,7 @@ public class Usage {
 
 	@Id
 	private String id;
-	private String idQuestion;
+	private String idExercise;
 	private String ctId;
 	private LocalDate date;
 	private User user;

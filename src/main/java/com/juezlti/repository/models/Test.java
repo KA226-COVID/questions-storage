@@ -17,14 +17,14 @@ public class Test {
 	private String status;
 	private boolean is_public;
 //	private String statement;
-	private List<Question> questions;
+	private List<Exercise> exercises;
 	
-	public List<Question> getQuestions() {
-		return questions;
+	public List<Exercise> getExercises() {
+		return exercises;
 	}
 	
-	public void setQuestions(List<Question> questions) {
-		this.questions = questions;
+	public void setExercises(List<Exercise> exercises) {
+		this.exercises = exercises;
 	}
 	
 	

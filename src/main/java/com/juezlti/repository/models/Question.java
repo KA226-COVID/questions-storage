@@ -14,7 +14,7 @@ import lombok.Data;
 
 @Data
 @Document(collection = "test")
-public class Question {
+public class Exercise {
 
 	@Id
 	private String id;
@@ -39,32 +39,32 @@ public class Question {
 	private String averageGradeTime;
 	private String averageGrade;
 	private String numberVotes;
-	private String question_solution;
+	private String exercise_solution;
 	
-	private String question_must;
-	private String question_musnt;
+	private String exercise_must;
+	private String exercise_musnt;
 
 	// SQL
-	private Integer question_dbms;
-	private String question_sql_type;
-	private String question_database;
-	private String question_probe;
-	private String question_onfly;
+	private Integer exercise_dbms;
+	private String exercise_sql_type;
+	private String exercise_database;
+	private String exercise_probe;
+	private String exercise_onfly;
 	
 	//Code
-	private Integer question_language;
-	private String question_input_test;
-	private String question_input_grade;
-	private String question_output_test;
-	private String question_output_grade;
+	private Integer exercise_language;
+	private String exercise_input_test;
+	private String exercise_input_grade;
+	private String exercise_output_test;
+	private String exercise_output_grade;
 	private String recalculateOutputs;
 	
 	@Transient
-	@JsonProperty("isCodeQuestion")
-	private boolean codeQuestion;
+	@JsonProperty("isCodeExercise")
+	private boolean codeExercise;
 	@Transient
-	@JsonProperty("isSqlQuestion")
-	private boolean sqlQuestion;
+	@JsonProperty("isSqlExercise")
+	private boolean sqlExercise;
 
 
 }

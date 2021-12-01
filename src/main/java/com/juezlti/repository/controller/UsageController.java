@@ -29,11 +29,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juezlti.repository.models.Usage;
-import com.juezlti.repository.models.Question;
+import com.juezlti.repository.models.Exercise;
 import com.juezlti.repository.models.Test;
 import com.juezlti.repository.models.User;
 import com.juezlti.repository.repository.UsageRepository;
-import com.juezlti.repository.repository.QuestionRepository;
+import com.juezlti.repository.repository.ExerciseRepository;
 import com.juezlti.repository.repository.TestRepository;
 import com.juezlti.repository.util.JsonConverter;
 
@@ -48,7 +48,7 @@ public class UsageController {
 	private UsageRepository usageRepository;
 	
 	@Autowired
-	private QuestionRepository questionRepository;
+	private ExerciseRepository exerciseRepository;
 	
 	@Autowired
 	private TestRepository testRepository;
@@ -67,7 +67,7 @@ public class UsageController {
 			});
 			
 				try {
-					String idQuestion = usages.getIdQuestion();
+					String idExercise = usages.getIdExercise();
 					String ctId = usages.getCtId();
 					LocalDate currentDate = LocalDate.now();
 					User user = usages.getUser();
@@ -75,7 +75,7 @@ public class UsageController {
 					Integer understandabilityScore = usages.getUnderstandabilityScore();
 					Integer difficultyScore = usages.getDifficultyScore();
 
-					if (StringUtils.isBlank(idQuestion) || timeScore == null || understandabilityScore==null || difficultyScore==null) {
+					if (StringUtils.isBlank(idExercise) || timeScore == null || understandabilityScore==null || difficultyScore==null) {
 						JSONObject converted = JsonConverter.failConverter(HttpStatus.BAD_REQUEST, "Empty field", usages);
 						log.warn("Empty field");
 					}
@@ -87,7 +87,7 @@ public class UsageController {
 					}
 
 					Usage newUsage = new Usage();
-					newUsage.setIdQuestion(idQuestion);
+					newUsage.setIdExercise(idExercise);
 					newUsage.setCtId(ctId);
 					newUsage.setDate(currentDate);
 					newUsage.setUnderstandabilityScore(understandabilityScore);
@@ -99,8 +99,8 @@ public class UsageController {
 					JSONObject converted = JsonConverter.okConverter(HttpStatus.OK, usages);
 
 				} catch (Exception ex) {
-					log.error("Unexpected error trying to create question {}", ex);
-					return new String("Unexpected error trying to create question " + HttpStatus.BAD_REQUEST);
+					log.error("Unexpected error trying to create exercise {}", ex);
+					return new String("Unexpected error trying to create exercise " + HttpStatus.BAD_REQUEST);
 				}
 			
 			jsonResponse = jsonArray.toString();
@@ -126,10 +126,10 @@ public class UsageController {
 		return usageRepository.findByDate(date);
 	}
 	
-	@GetMapping(path = "/question_id/{value}")
-	public List<Usage> getUsageQuestionId(@PathVariable("value") String value) {
+	@GetMapping(path = "/exercise_id/{value}")
+	public List<Usage> getUsageExerciseId(@PathVariable("value") String value) {
 
-		return usageRepository.findByIdQuestionIgnoreCase(value);
+		return usageRepository.findByIdExerciseIgnoreCase(value);
 	}
 
 	@GetMapping(path = "/usagesCount")
@@ -145,7 +145,7 @@ public class UsageController {
 		List<String> list2 = value.get(1);
 		String ctId = value.get(2).get(0);
 		
-		return usageRepository.findByIdQuestionInAndUserIdInAndCtId( list,  list2, ctId);
+		return usageRepository.findByIdExerciseInAndUserIdInAndCtId( list,  list2, ctId);
 	}
 	
 	@PutMapping(path = "/updateTest")
@@ -170,8 +170,8 @@ public class UsageController {
 		return ResponseEntity.status(HttpStatus.OK).body(t.toString());
 	}
 	
-	@PutMapping(path = "/updateQuestion")
-	public ResponseEntity updateQuestion(@RequestBody String json) {
+	@PutMapping(path = "/updateExercise")
+	public ResponseEntity updateExercise(@RequestBody String json) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
 				false);
 		Usage usage= new Usage();
@@ -187,23 +187,23 @@ public class UsageController {
 			e.printStackTrace();
 		}
 		
-		Question newQuestion = testRepository.findQuestionById(usage.getIdQuestion());
+		Exercise newExercise = testRepository.findExerciseById(usage.getIdExercise());
 	
-			if(newQuestion.getNumberVotes()!=null) {
-				int nVotes =Integer.valueOf(newQuestion.getNumberVotes());
-				newQuestion.setNumberVotes(String.valueOf(nVotes+1));
-				newQuestion.setAverageGradeUnderstability(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeUnderstability())) +  Double.valueOf(usage.getUnderstandabilityScore()) ) / (nVotes+1)));
-				newQuestion.setAverageGradeDifficulty(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeDifficulty())) +  Double.valueOf(usage.getDifficultyScore()) ) / (nVotes+1)));
-				newQuestion.setAverageGradeTime(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeTime())) +  Double.valueOf(usage.getTimeScore()) ) / (nVotes+1)));
-				newQuestion.setAverageGrade(String.valueOf( (  Double.valueOf(newQuestion.getAverageGradeUnderstability())+Double.valueOf(newQuestion.getAverageGradeDifficulty()) + Double.valueOf(newQuestion.getAverageGradeTime())  ) / 3));
+			if(newExercise.getNumberVotes()!=null) {
+				int nVotes =Integer.valueOf(newExercise.getNumberVotes());
+				newExercise.setNumberVotes(String.valueOf(nVotes+1));
+				newExercise.setAverageGradeUnderstability(String.valueOf( ( (nVotes*Double.valueOf(newExercise.getAverageGradeUnderstability())) +  Double.valueOf(usage.getUnderstandabilityScore()) ) / (nVotes+1)));
+				newExercise.setAverageGradeDifficulty(String.valueOf( ( (nVotes*Double.valueOf(newExercise.getAverageGradeDifficulty())) +  Double.valueOf(usage.getDifficultyScore()) ) / (nVotes+1)));
+				newExercise.setAverageGradeTime(String.valueOf( ( (nVotes*Double.valueOf(newExercise.getAverageGradeTime())) +  Double.valueOf(usage.getTimeScore()) ) / (nVotes+1)));
+				newExercise.setAverageGrade(String.valueOf( (  Double.valueOf(newExercise.getAverageGradeUnderstability())+Double.valueOf(newExercise.getAverageGradeDifficulty()) + Double.valueOf(newExercise.getAverageGradeTime())  ) / 3));
 			}else {
-				newQuestion.setNumberVotes("1");
-				newQuestion.setAverageGradeUnderstability(String.valueOf(Double.valueOf(usage.getUnderstandabilityScore())));
-				newQuestion.setAverageGradeDifficulty(String.valueOf(Double.valueOf(usage.getDifficultyScore()) ));
-				newQuestion.setAverageGradeTime(String.valueOf(Double.valueOf(usage.getTimeScore())));
-				newQuestion.setAverageGrade(String.valueOf( (  Double.valueOf(usage.getUnderstandabilityScore())+Double.valueOf(usage.getDifficultyScore()) + Double.valueOf(usage.getTimeScore())  ) / 3));
+				newExercise.setNumberVotes("1");
+				newExercise.setAverageGradeUnderstability(String.valueOf(Double.valueOf(usage.getUnderstandabilityScore())));
+				newExercise.setAverageGradeDifficulty(String.valueOf(Double.valueOf(usage.getDifficultyScore()) ));
+				newExercise.setAverageGradeTime(String.valueOf(Double.valueOf(usage.getTimeScore())));
+				newExercise.setAverageGrade(String.valueOf( (  Double.valueOf(usage.getUnderstandabilityScore())+Double.valueOf(usage.getDifficultyScore()) + Double.valueOf(usage.getTimeScore())  ) / 3));
 			}
-		Question q =questionRepository.save(newQuestion);
+		Exercise q =exerciseRepository.save(newExercise);
 
 		return ResponseEntity.status(HttpStatus.OK).body(q.toString());
 	}

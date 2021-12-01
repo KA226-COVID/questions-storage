@@ -1,1 +1,1 @@
-questions-storage
+exercises-storage
