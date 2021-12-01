@@ -6,21 +6,21 @@ import java.util.List;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
-import com.juezlti.repository.models.Feedback;
+import com.juezlti.repository.models.Usage;
 import com.juezlti.repository.models.Test;
 
 
 
-public interface FeedbackRepository extends MongoRepository<Feedback, String> {
+public interface UsageRepository extends MongoRepository<Usage, String> {
 	
 	
 	 @Query( value = "{idQuestion: {$in : ?0}, user:{userId :{$in : ?1 } } } ")
-	  List<Feedback> findByIds ( List<String> list,  List<String> list2);
+	  List<Usage> findByIds ( List<String> list,  List<String> list2);
 	  
-	 List<Feedback> findByIdQuestionInAndUserIdInAndCtId(List<String> idQuestions, List<String> idUser, String ctId);
+	 List<Usage> findByIdQuestionInAndUserIdInAndCtId(List<String> idQuestions, List<String> idUser, String ctId);
 	 
 	 int countByCtId(String ctId);
 	
-	  List<Feedback> findByIdQuestionIgnoreCase(String idQuestion); 
-	  List<Feedback> findByDate(Date date); 
+	  List<Usage> findByIdQuestionIgnoreCase(String idQuestion); 
+	  List<Usage> findByDate(Date date); 
 	}

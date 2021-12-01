@@ -28,11 +28,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.juezlti.repository.models.Feedback;
+import com.juezlti.repository.models.Usage;
 import com.juezlti.repository.models.Question;
 import com.juezlti.repository.models.Test;
 import com.juezlti.repository.models.User;
-import com.juezlti.repository.repository.FeedbackRepository;
+import com.juezlti.repository.repository.UsageRepository;
 import com.juezlti.repository.repository.QuestionRepository;
 import com.juezlti.repository.repository.TestRepository;
 import com.juezlti.repository.util.JsonConverter;
@@ -41,11 +41,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @Slf4j
-@RequestMapping("/api/feedback")
-public class FeedbackController {
+@RequestMapping("/api/usage")
+public class UsageController {
 
 	@Autowired
-	private FeedbackRepository feedbackRepository;
+	private UsageRepository usageRepository;
 	
 	@Autowired
 	private QuestionRepository questionRepository;
@@ -55,48 +55,48 @@ public class FeedbackController {
 
 	
 	@PostMapping(path = "/tickets")
-	public String createFeedback(@RequestBody String feedbackJson) {
+	public String createUsage(@RequestBody String usageJson) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
 				false);
-		Feedback feedbacks = new Feedback();
+		Usage usages = new Usage();
 		JSONObject jsonArray = new JSONObject();
 		String jsonResponse;
 
 		try {
-			feedbacks = objectMapper.readValue(feedbackJson, new TypeReference<Feedback>() {
+			usages = objectMapper.readValue(usageJson, new TypeReference<Usage>() {
 			});
 			
 				try {
-					String idQuestion = feedbacks.getIdQuestion();
-					String ctId = feedbacks.getCtId();
+					String idQuestion = usages.getIdQuestion();
+					String ctId = usages.getCtId();
 					LocalDate currentDate = LocalDate.now();
-					User user = feedbacks.getUser();
-					Integer timeScore = feedbacks.getTimeScore();
-					Integer understandabilityScore = feedbacks.getUnderstandabilityScore();
-					Integer difficultyScore = feedbacks.getDifficultyScore();
+					User user = usages.getUser();
+					Integer timeScore = usages.getTimeScore();
+					Integer understandabilityScore = usages.getUnderstandabilityScore();
+					Integer difficultyScore = usages.getDifficultyScore();
 
 					if (StringUtils.isBlank(idQuestion) || timeScore == null || understandabilityScore==null || difficultyScore==null) {
-						JSONObject converted = JsonConverter.failConverter(HttpStatus.BAD_REQUEST, "Empty field", feedbacks);
+						JSONObject converted = JsonConverter.failConverter(HttpStatus.BAD_REQUEST, "Empty field", usages);
 						log.warn("Empty field");
 					}
 
 					if ((timeScore< 1 || timeScore > 5) || (understandabilityScore< 1 || understandabilityScore > 5) || (difficultyScore< 1 || difficultyScore > 5)) {
 						log.warn("Incorrect score {}");
 						JSONObject converted = JsonConverter.failConverter(HttpStatus.BAD_REQUEST, "Incorrect score",
-								feedbacks);
+								usages);
 					}
 
-					Feedback newFeedback = new Feedback();
-					newFeedback.setIdQuestion(idQuestion);
-					newFeedback.setCtId(ctId);
-					newFeedback.setDate(currentDate);
-					newFeedback.setUnderstandabilityScore(understandabilityScore);
-					newFeedback.setDifficultyScore(difficultyScore);
-					newFeedback.setTimeScore(timeScore);
-					newFeedback.setUser(user);
-					feedbackRepository.save(newFeedback);
+					Usage newUsage = new Usage();
+					newUsage.setIdQuestion(idQuestion);
+					newUsage.setCtId(ctId);
+					newUsage.setDate(currentDate);
+					newUsage.setUnderstandabilityScore(understandabilityScore);
+					newUsage.setDifficultyScore(difficultyScore);
+					newUsage.setTimeScore(timeScore);
+					newUsage.setUser(user);
+					usageRepository.save(newUsage);
 
-					JSONObject converted = JsonConverter.okConverter(HttpStatus.OK, feedbacks);
+					JSONObject converted = JsonConverter.okConverter(HttpStatus.OK, usages);
 
 				} catch (Exception ex) {
 					log.error("Unexpected error trying to create question {}", ex);
@@ -113,7 +113,7 @@ public class FeedbackController {
 	}
 
 	@GetMapping(path = "/date/{value}")
-	public List<Feedback> getFeedbackDate(@PathVariable("value") String value) {
+	public List<Usage> getUsageDate(@PathVariable("value") String value) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
 		Date date=null;
@@ -123,29 +123,29 @@ public class FeedbackController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return feedbackRepository.findByDate(date);
+		return usageRepository.findByDate(date);
 	}
 	
 	@GetMapping(path = "/question_id/{value}")
-	public List<Feedback> getFeedbackQuestionId(@PathVariable("value") String value) {
+	public List<Usage> getUsageQuestionId(@PathVariable("value") String value) {
 
-		return feedbackRepository.findByIdQuestionIgnoreCase(value);
+		return usageRepository.findByIdQuestionIgnoreCase(value);
 	}
 
-	@GetMapping(path = "/feedbacksCount")
+	@GetMapping(path = "/usagesCount")
 	public int get(@RequestParam("ctid") String ctId) {
-		return feedbackRepository.countByCtId(ctId);
+		return usageRepository.countByCtId(ctId);
 	}
 	
 
 	
-	@GetMapping(path = "/getFeedbackByIds")
-	public List<Feedback> getFeedbackByIds(@RequestBody List<List<String>> value) {
+	@GetMapping(path = "/getUsageByIds")
+	public List<Usage> getUsageByIds(@RequestBody List<List<String>> value) {
 		List<String> list = value.get(0);
 		List<String> list2 = value.get(1);
 		String ctId = value.get(2).get(0);
 		
-		return feedbackRepository.findByIdQuestionInAndUserIdInAndCtId( list,  list2, ctId);
+		return usageRepository.findByIdQuestionInAndUserIdInAndCtId( list,  list2, ctId);
 	}
 	
 	@PutMapping(path = "/updateTest")
@@ -174,10 +174,10 @@ public class FeedbackController {
 	public ResponseEntity updateQuestion(@RequestBody String json) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
 				false);
-		Feedback feedback= new Feedback();
+		Usage usage= new Usage();
 		
 		try {
-			feedback = objectMapper.readValue(json, new TypeReference<Feedback>() {
+			usage = objectMapper.readValue(json, new TypeReference<Usage>() {
 			});
 		} catch (JsonMappingException e) {
 			// TODO Auto-generated catch block
@@ -187,21 +187,21 @@ public class FeedbackController {
 			e.printStackTrace();
 		}
 		
-		Question newQuestion = testRepository.findQuestionById(feedback.getIdQuestion());
+		Question newQuestion = testRepository.findQuestionById(usage.getIdQuestion());
 	
 			if(newQuestion.getNumberVotes()!=null) {
 				int nVotes =Integer.valueOf(newQuestion.getNumberVotes());
 				newQuestion.setNumberVotes(String.valueOf(nVotes+1));
-				newQuestion.setAverageGradeUnderstability(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeUnderstability())) +  Double.valueOf(feedback.getUnderstandabilityScore()) ) / (nVotes+1)));
-				newQuestion.setAverageGradeDifficulty(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeDifficulty())) +  Double.valueOf(feedback.getDifficultyScore()) ) / (nVotes+1)));
-				newQuestion.setAverageGradeTime(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeTime())) +  Double.valueOf(feedback.getTimeScore()) ) / (nVotes+1)));
+				newQuestion.setAverageGradeUnderstability(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeUnderstability())) +  Double.valueOf(usage.getUnderstandabilityScore()) ) / (nVotes+1)));
+				newQuestion.setAverageGradeDifficulty(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeDifficulty())) +  Double.valueOf(usage.getDifficultyScore()) ) / (nVotes+1)));
+				newQuestion.setAverageGradeTime(String.valueOf( ( (nVotes*Double.valueOf(newQuestion.getAverageGradeTime())) +  Double.valueOf(usage.getTimeScore()) ) / (nVotes+1)));
 				newQuestion.setAverageGrade(String.valueOf( (  Double.valueOf(newQuestion.getAverageGradeUnderstability())+Double.valueOf(newQuestion.getAverageGradeDifficulty()) + Double.valueOf(newQuestion.getAverageGradeTime())  ) / 3));
 			}else {
 				newQuestion.setNumberVotes("1");
-				newQuestion.setAverageGradeUnderstability(String.valueOf(Double.valueOf(feedback.getUnderstandabilityScore())));
-				newQuestion.setAverageGradeDifficulty(String.valueOf(Double.valueOf(feedback.getDifficultyScore()) ));
-				newQuestion.setAverageGradeTime(String.valueOf(Double.valueOf(feedback.getTimeScore())));
-				newQuestion.setAverageGrade(String.valueOf( (  Double.valueOf(feedback.getUnderstandabilityScore())+Double.valueOf(feedback.getDifficultyScore()) + Double.valueOf(feedback.getTimeScore())  ) / 3));
+				newQuestion.setAverageGradeUnderstability(String.valueOf(Double.valueOf(usage.getUnderstandabilityScore())));
+				newQuestion.setAverageGradeDifficulty(String.valueOf(Double.valueOf(usage.getDifficultyScore()) ));
+				newQuestion.setAverageGradeTime(String.valueOf(Double.valueOf(usage.getTimeScore())));
+				newQuestion.setAverageGrade(String.valueOf( (  Double.valueOf(usage.getUnderstandabilityScore())+Double.valueOf(usage.getDifficultyScore()) + Double.valueOf(usage.getTimeScore())  ) / 3));
 			}
 		Question q =questionRepository.save(newQuestion);
 
