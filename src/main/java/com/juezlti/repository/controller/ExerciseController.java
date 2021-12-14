@@ -27,12 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequestMapping("/api/exercises")
 public class ExerciseController {
-	
 
 	@Autowired
     private ExerciseRepository exerciseRepository;
-	
-	
+
 	@PostMapping(path = "/createExercise")
 	public String createExercises(@RequestBody String exerciseJson) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,

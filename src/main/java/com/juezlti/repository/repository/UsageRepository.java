@@ -17,7 +17,7 @@ public interface UsageRepository extends MongoRepository<Usage, String> {
 	 @Query( value = "{idExercise: {$in : ?0}, user:{userId :{$in : ?1 } } } ")
 	  List<Usage> findByIds ( List<String> list,  List<String> list2);
 	  
-	 List<Usage> findByIdExerciseInAndUserIdInAndCtId(List<String> idExercises, List<String> idUser, String ctId);
+	 List<Usage> findByIdExerciseInAndIdInAndCtId(List<String> idExercises, List<String> id, String ctId);
 	 
 	 int countByCtId(String ctId);
 	
