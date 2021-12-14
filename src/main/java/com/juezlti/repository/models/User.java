@@ -1,24 +1,22 @@
 package com.juezlti.repository.models;
 
 
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import lombok.Data;
 
 @Data
+@NoArgsConstructor
+@Document(collection = "user")
 public class User {
-	
-//	@Id
-	@Field("userId")
+    
 	private String id;
-    private String profile_id;
-    private String displayname;
+    private String displayName;
+    private String userName;
     private String email;
-
-	
-	public User() {
-	}
-
+    private String password;
 
 }
