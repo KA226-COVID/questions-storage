@@ -1,9 +1,11 @@
 package com.juezlti.repository.auth;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 import com.juezlti.repository.models.User;
 import com.juezlti.repository.repository.UserRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,10 +36,12 @@ public class UsersAuthService implements UserDetailsService {
 		);
 	}
 	
-	public User save(User user) {
-		User newUser = new User();
-		newUser.setUserName(user.getUserName());
-		newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
-		return userRepository.save(newUser);
+	public User createUser(User user) {
+		user.setDisplayName(
+				Optional.ofNullable(user.getDisplayName())
+						.orElse(user.getUserName().toLowerCase())
+		);
+		user.setPassword(bcryptEncoder.encode(user.getPassword()));
+		return userRepository.save(user);
 	}
 }

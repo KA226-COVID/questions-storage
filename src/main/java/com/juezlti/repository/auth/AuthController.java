@@ -44,7 +44,7 @@ public class AuthController {
 	@RequestMapping(value = "/register", method = RequestMethod.POST)
 	public ResponseEntity<?> saveUser(@RequestBody User user) throws Exception {
 		System.out.println(user);
-		return ResponseEntity.ok(usersAuthService.save(user));
+		return ResponseEntity.ok(usersAuthService.createUser(user));
 	}
 	@RequestMapping(value = "/me", method = {RequestMethod.GET, RequestMethod.POST})
 	public ResponseEntity<?> userInfo(Authentication authentication){
