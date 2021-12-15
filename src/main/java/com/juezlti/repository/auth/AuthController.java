@@ -40,12 +40,15 @@ public class AuthController {
 
 		return ResponseEntity.ok(token);
 	}
-	
+
+
 	@RequestMapping(value = "/register", method = RequestMethod.POST)
 	public ResponseEntity<?> saveUser(@RequestBody User user) throws Exception {
 		System.out.println(user);
 		return ResponseEntity.ok(usersAuthService.createUser(user));
 	}
+
+
 	@RequestMapping(value = "/me", method = {RequestMethod.GET, RequestMethod.POST})
 	public ResponseEntity<?> userInfo(Authentication authentication){
 		UserDetails userDetails = Optional.ofNullable(authentication.getPrincipal())
@@ -57,6 +60,7 @@ public class AuthController {
 		}
 		return ResponseEntity.ok(userDetails.getUsername());
 	}
+
 
 	private void authenticate(String username, String password) throws Exception {
 		try {
