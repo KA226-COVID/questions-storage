@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import com.juezlti.repository.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,7 +16,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin
 @RequestMapping("/api/auth")
 public class AuthController {
 
@@ -24,6 +24,9 @@ public class AuthController {
 
 	@Autowired
 	private JwtTokenUtil jwtTokenUtil;
+
+	@Value("${auth.register.secret}")
+	String registerSecret;
 
 	@Autowired
 	private UsersAuthService usersAuthService;
@@ -43,8 +46,13 @@ public class AuthController {
 
 
 	@RequestMapping(value = "/register", method = RequestMethod.POST)
-	public ResponseEntity<?> saveUser(@RequestBody User user) throws Exception {
-		System.out.println(user);
+	public ResponseEntity<?> saveUser(
+			@RequestBody User user,
+			@RequestHeader(value = "auth-secret", required = false) String secret
+	) throws Exception {
+		if(!registerSecret.equals(secret)){
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing \"auth-secret\" header");
+		}
 		return ResponseEntity.ok(usersAuthService.createUser(user));
 	}
 
