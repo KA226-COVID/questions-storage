@@ -145,7 +145,7 @@ public class UsageController {
 		List<String> list2 = value.get(1);
 		String ctId = value.get(2).get(0);
 		
-		return usageRepository.findByIdExerciseInAndIdInAndCtId( list,  list2, ctId);
+		return usageRepository.findByIdExerciseInAndUserIdInAndCtId( list,  list2, ctId);
 	}
 	
 	@PutMapping(path = "/updateTest")

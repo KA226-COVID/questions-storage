@@ -28,6 +28,9 @@ public class User {
     @Indexed(unique=true)
     private String userName;
 
+    @JsonProperty("profile_id")
+    private String profileId;
+
     @JsonProperty("email")
     private String email;
 
