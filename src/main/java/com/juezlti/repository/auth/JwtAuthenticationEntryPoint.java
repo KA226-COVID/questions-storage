@@ -1,6 +1,7 @@
-package com.juezlti.repository.util;
+package com.juezlti.repository.auth;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -13,15 +14,14 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AuthEntryPointJwt implements AuthenticationEntryPoint {
+public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint, Serializable {
 
-	private static final Logger logger = LoggerFactory.getLogger(AuthEntryPointJwt.class);
+	private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationEntryPoint.class);
 
 	@Override
 	public void commence(HttpServletRequest request, HttpServletResponse response,
-			AuthenticationException authException) throws IOException, ServletException {
+						 AuthenticationException authException) throws IOException, ServletException {
 		logger.error("Unauthorized error: {}", authException.getMessage());
 		response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error: Unauthorized");
 	}
-
 }
