@@ -31,6 +31,8 @@ public class Exercise {
 	private List<String> programmingLanguages;
 	private Date updated_at;
 	private Date created_at;
+	private String statement;
+	private String hint;
 	
 	private String type;
 	private String difficulty;
