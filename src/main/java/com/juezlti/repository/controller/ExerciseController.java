@@ -68,14 +68,7 @@ public class ExerciseController {
 	@PostMapping(path = "/getAllExercises")
 	public List<Exercise> getAllExercises(@RequestParam("exerciseIds") String exerciseIds) {
 		List<String> exercisesIdArr = Arrays.asList(exerciseIds.split(","));
-		return exerciseRepository.findByIdIn(exercisesIdArr).stream().map(el -> {
-			boolean isSql = Optional.ofNullable(el.getExercise_sql_type()).isPresent();
-			boolean isCode = Optional.ofNullable(el.getExercise_language()).isPresent();
-			
-			el.setCodeExercise(!isSql && isCode);
-			el.setSqlExercise(isSql && !isCode);
-			return el;
-		}).collect(Collectors.toList());
+		return exerciseRepository.findByIdIn(exercisesIdArr);
 	}
 	
 	@GetMapping(path = "/getAllExercises/{value}")
