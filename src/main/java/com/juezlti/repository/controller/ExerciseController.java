@@ -1,16 +1,20 @@
 package com.juezlti.repository.controller;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
+import com.juezlti.repository.storage.FileService;
+import com.juezlti.repository.storage.FilesController;
+import net.lingala.zip4j.ZipFile;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -18,18 +22,27 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juezlti.repository.models.Exercise;
-import com.juezlti.repository.models.Test;
 import com.juezlti.repository.repository.ExerciseRepository;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @Slf4j
 @RequestMapping("/api/exercises")
 public class ExerciseController {
 
+	@Value("${files-storage.upload:/upload}")
+	private String uploadPath;
+	
+	@Value("${files-storage.exercises:/exercises}")
+	private String exercisesPath;
+	
 	@Autowired
     private ExerciseRepository exerciseRepository;
+	
+	@Autowired
+	private FileService fileService;
 
 	@PostMapping(path = "/createExercise")
 	public String createExercises(@RequestBody String exerciseJson) {
@@ -63,6 +76,31 @@ public class ExerciseController {
 			return new String("Failure processing JSON " + HttpStatus.BAD_REQUEST);
 		}
 		return jsonResponse;
+	}
+
+	@PostMapping("import-file")
+	public ResponseEntity<FilesController.UploadResponseMessage> uploadFile(
+			@RequestParam("exercise") MultipartFile file
+	) {
+		try {
+			Path savedPath = fileService.save(file, uploadPath);
+			
+			ZipFile zipFile = new ZipFile(savedPath.toFile());
+			zipFile.extractAll(
+				fileService.getBaseUploadStrPath() +
+							exercisesPath +
+							"/" +
+							savedPath.getFileName().toString().replace(".zip", "")
+			);
+			
+			return ResponseEntity.status(HttpStatus.OK)
+					.body(new FilesController.UploadResponseMessage("Uploaded the file successfully: " + file.getOriginalFilename()));
+		} catch (Exception e) {
+			System.out.println("FAILED");
+			System.out.println(e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new FilesController.UploadResponseMessage("Could not upload the file: " + file.getOriginalFilename() + "!"));
+		}
 	}
 
 	@PostMapping(path = "/getAllExercises")
