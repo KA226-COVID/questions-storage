@@ -141,31 +141,21 @@ public class ExerciseController {
 	}
 
 	@GetMapping("external/{id}/statement/**")
-	public ResponseEntity<Resource> getAuthorkitExerciseStatement(@PathVariable String id, HttpServletRequest request){
-		String filePath = extractPath(request);
-		String statementFile = filePath.split("/")[1];
-		String filenameParsed = "";
-		try {
-			filenameParsed = URLDecoder.decode(filePath, StandardCharsets.UTF_8.toString());
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
+	public ResponseEntity<Resource> getAuthorkitExerciseStatement(
+			@PathVariable String id, HttpServletRequest request
+	){
+		String filenameParsed = extractPath(request, true);
+		String pathParsed = extractPath(request, false);
 
 		Resource fileResource = fileService.loadExerciseStatement(id, filenameParsed);
-		String filenameHeader = statementFile;
-		String mimeType = "";
-		try {
-			mimeType = Files.probeContentType(fileResource.getFile().toPath());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
 		HttpHeaders responseHeaders = new HttpHeaders();
-		MediaType mimeTypeObject = MediaType.valueOf(
-				Optional.ofNullable(mimeType).orElse("text/plain")
+		responseHeaders.setContentType(
+				getMimeType(fileResource)
 		);
-		responseHeaders.setContentType(mimeTypeObject);
-		responseHeaders.setContentDisposition(ContentDisposition.parse("attachment; filename=\"" + filenameHeader + "\""));
+		responseHeaders.setContentDisposition(
+				ContentDisposition.parse("attachment; filename=\"" + pathParsed + "\"")
+		);
 
 		return ResponseEntity.ok()
 				.headers(responseHeaders)
@@ -186,10 +176,39 @@ public class ExerciseController {
 		return aux;
 	}
 
-	private String extractPath(HttpServletRequest request) {
+	private String extractPath(HttpServletRequest request, boolean decode) {
 		String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
 		String matchPattern = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
-		return new AntPathMatcher().extractPathWithinPattern(matchPattern, path);
+		String extractedPath = new AntPathMatcher().extractPathWithinPattern(matchPattern, path);
+		if(!decode){
+			return extractedPath;
+		}
+
+		String filenameParsed = null;
+		try {
+			filenameParsed = URLDecoder.decode(
+					extractedPath.split("/")[1],
+					StandardCharsets.UTF_8.toString()
+			);
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return filenameParsed;
+	}
+	
+	public MediaType getMimeType(Resource resource){
+		String mimeType = null;
+		try {
+			mimeType = Files.probeContentType(resource.getFile().toPath());
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+		return MediaType.valueOf(
+				Optional.ofNullable(mimeType).orElse("text/plain")
+		);
 	}
 
 	@PostMapping(path = "/getAllExercises")
