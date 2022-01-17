@@ -1,20 +1,31 @@
 package com.juezlti.repository.controller;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.juezlti.repository.storage.FileService;
 import com.juezlti.repository.storage.FilesController;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import net.lingala.zip4j.ZipFile;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,6 +37,10 @@ import com.juezlti.repository.repository.ExerciseRepository;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
+import com.juezlti.repository.service.ExerciseService;
+import org.springframework.web.servlet.HandlerMapping;
+
+import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @Slf4j
@@ -43,6 +58,9 @@ public class ExerciseController {
 	
 	@Autowired
 	private FileService fileService;
+	
+	@Autowired
+	private ExerciseService exerciseService;
 
 	@PostMapping(path = "/createExercise")
 	public String createExercises(@RequestBody String exerciseJson) {
@@ -101,6 +119,77 @@ public class ExerciseController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new FilesController.UploadResponseMessage("Could not upload the file: " + file.getOriginalFilename() + "!"));
 		}
+	}
+
+	@Data
+	@AllArgsConstructor
+	public class ExerciseItem {
+		String id;
+		List<String> statementsUrl;
+		List<String> testsUrl;
+		List<String> solutionsUrl;
+	}
+
+	@GetMapping("external/{id}")
+	public ResponseEntity<ExerciseItem> getAuthorkitExercise(@PathVariable String id){
+		ExerciseItem aux = new ExerciseItem(id, null, null, null);
+		aux.setStatementsUrl(exerciseService.getExerciseStatements(id));
+		aux.setSolutionsUrl(exerciseService.getExerciseSolutions(id));
+		aux.setTestsUrl(exerciseService.getExerciseTests(id));
+
+		return ResponseEntity.ok().body(aux);
+	}
+
+	@GetMapping("external/{id}/statement/**")
+	public ResponseEntity<Resource> getAuthorkitExerciseStatement(@PathVariable String id, HttpServletRequest request){
+		String filePath = extractPath(request);
+		String statementFile = filePath.split("/")[1];
+		String filenameParsed = "";
+		try {
+			filenameParsed = URLDecoder.decode(filePath, StandardCharsets.UTF_8.toString());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+
+		Resource fileResource = fileService.loadExerciseStatement(id, filenameParsed);
+		String filenameHeader = statementFile;
+		String mimeType = "";
+		try {
+			mimeType = Files.probeContentType(fileResource.getFile().toPath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		HttpHeaders responseHeaders = new HttpHeaders();
+		MediaType mimeTypeObject = MediaType.valueOf(
+				Optional.ofNullable(mimeType).orElse("text/plain")
+		);
+		responseHeaders.setContentType(mimeTypeObject);
+		responseHeaders.setContentDisposition(ContentDisposition.parse("attachment; filename=\"" + filenameHeader + "\""));
+
+		return ResponseEntity.ok()
+				.headers(responseHeaders)
+				.body(fileResource);
+	}
+
+	@GetMapping("external/{id}/tests/{file}")
+	public ExerciseItem getAuthorkitExerciseTests(@PathVariable String id, @PathVariable String file){
+		ExerciseItem aux = new ExerciseItem(id, null, null, null);
+
+		return aux;
+	}
+
+	@GetMapping("external/{id}/solution/{file}")
+	public ExerciseItem getAuthorkitExerciseSolution(@PathVariable String id, @PathVariable String file){
+		ExerciseItem aux = new ExerciseItem(id, null, null, null);
+
+		return aux;
+	}
+
+	private String extractPath(HttpServletRequest request) {
+		String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+		String matchPattern = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+		return new AntPathMatcher().extractPathWithinPattern(matchPattern, path);
 	}
 
 	@PostMapping(path = "/getAllExercises")
