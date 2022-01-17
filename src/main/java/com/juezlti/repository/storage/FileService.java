@@ -95,6 +95,9 @@ public class FileService {
     public Resource loadExerciseTests(String id, String filename) {
         return getResource(id, filename, TESTS_FOLDER);
     }
+    public Resource loadExerciseSolutions(String id, String filename) {
+        return getResource(id, filename, SOLUTIONS_FOLDER);
+    }
 
     private Resource getResource(String id, String filename, String folder) {
         try {

@@ -61,6 +61,12 @@ public class ExerciseController {
 	
 	@Autowired
 	private ExerciseService exerciseService;
+	
+	public enum ExerciseData {
+		STATEMENT,
+		TEST,
+		SOLUTION
+	}
 
 	@PostMapping(path = "/createExercise")
 	public String createExercises(@RequestBody String exerciseJson) {
@@ -144,25 +150,39 @@ public class ExerciseController {
 	public ResponseEntity<Resource> getAuthorkitExerciseStatement(
 			@PathVariable String id, HttpServletRequest request
 	){
-		String filenameParsed = extractPath(request, true);
-		String pathParsed = extractPath(request, false);
-		Resource fileResource = fileService.loadExerciseStatement(id, pathParsed);
-
-		return ResponseEntity
-				.ok()
-				.headers(
-						buildHttpHeaders(filenameParsed, fileResource)
-				)
-				.body(fileResource);
+		return getExerciseData(id, ExerciseData.STATEMENT, request);
 	}
 
-	@GetMapping("external/{id}/tests/**")
+	@GetMapping("external/{id}/test/**")
 	public ResponseEntity<Resource> getAuthorkitExerciseTests(
 			@PathVariable String id, HttpServletRequest request
 	){
+		return getExerciseData(id, ExerciseData.TEST, request);
+	}
+
+	@GetMapping("external/{id}/solution/**")
+	public ResponseEntity<Resource> getAuthorkitExerciseSolution(
+			@PathVariable String id, HttpServletRequest request
+	){
+		return getExerciseData(id, ExerciseData.SOLUTION, request);
+	}
+
+	private ResponseEntity<Resource> getExerciseData(String id, ExerciseData exData, HttpServletRequest request) {
 		String filenameParsed = extractPath(request, true);
 		String pathParsed = extractPath(request, false);
-		Resource fileResource = fileService.loadExerciseTests(id, pathParsed);
+		Resource fileResource = null;
+		switch (exData){
+			case STATEMENT:
+			default:
+				fileResource = fileService.loadExerciseStatement(id, pathParsed);
+				break;
+			case TEST:
+				fileResource = fileService.loadExerciseTests(id, pathParsed);
+				break;
+			case SOLUTION:
+				fileResource = fileService.loadExerciseSolutions(id, pathParsed);
+				break;
+		}
 
 		return ResponseEntity
 				.ok()
@@ -181,13 +201,6 @@ public class ExerciseController {
 				ContentDisposition.parse("attachment; filename=\"" + pathParsed + "\"")
 		);
 		return responseHeaders;
-	}
-
-	@GetMapping("external/{id}/solution/{file}")
-	public ExerciseItem getAuthorkitExerciseSolution(@PathVariable String id, @PathVariable String file){
-		ExerciseItem aux = new ExerciseItem(id, null, null, null);
-
-		return aux;
 	}
 
 	private String extractPath(HttpServletRequest request, boolean decode) {
