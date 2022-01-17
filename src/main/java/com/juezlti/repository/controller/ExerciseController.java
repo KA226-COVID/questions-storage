@@ -146,9 +146,33 @@ public class ExerciseController {
 	){
 		String filenameParsed = extractPath(request, true);
 		String pathParsed = extractPath(request, false);
+		Resource fileResource = fileService.loadExerciseStatement(id, pathParsed);
 
-		Resource fileResource = fileService.loadExerciseStatement(id, filenameParsed);
+		return ResponseEntity
+				.ok()
+				.headers(
+						buildHttpHeaders(filenameParsed, fileResource)
+				)
+				.body(fileResource);
+	}
 
+	@GetMapping("external/{id}/tests/**")
+	public ResponseEntity<Resource> getAuthorkitExerciseTests(
+			@PathVariable String id, HttpServletRequest request
+	){
+		String filenameParsed = extractPath(request, true);
+		String pathParsed = extractPath(request, false);
+		Resource fileResource = fileService.loadExerciseTests(id, pathParsed);
+
+		return ResponseEntity
+				.ok()
+				.headers(
+						buildHttpHeaders(filenameParsed, fileResource)
+				)
+				.body(fileResource);
+	}
+
+	private HttpHeaders buildHttpHeaders(String pathParsed, Resource fileResource) {
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(
 				getMimeType(fileResource)
@@ -156,17 +180,7 @@ public class ExerciseController {
 		responseHeaders.setContentDisposition(
 				ContentDisposition.parse("attachment; filename=\"" + pathParsed + "\"")
 		);
-
-		return ResponseEntity.ok()
-				.headers(responseHeaders)
-				.body(fileResource);
-	}
-
-	@GetMapping("external/{id}/tests/{file}")
-	public ExerciseItem getAuthorkitExerciseTests(@PathVariable String id, @PathVariable String file){
-		ExerciseItem aux = new ExerciseItem(id, null, null, null);
-
-		return aux;
+		return responseHeaders;
 	}
 
 	@GetMapping("external/{id}/solution/{file}")

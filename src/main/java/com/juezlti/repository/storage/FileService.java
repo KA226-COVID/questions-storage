@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import static com.juezlti.repository.service.ExerciseService.STATEMENTS_FOLDER;
+import static com.juezlti.repository.service.ExerciseService.*;
 
 @Service
 public class FileService {
@@ -90,8 +90,15 @@ public class FileService {
     }
 
     public Resource loadExerciseStatement(String id, String filename) {
+        return getResource(id, filename, STATEMENTS_FOLDER);
+    }
+    public Resource loadExerciseTests(String id, String filename) {
+        return getResource(id, filename, TESTS_FOLDER);
+    }
+
+    private Resource getResource(String id, String filename, String folder) {
         try {
-            Path file = Paths.get(baseUploadStrPath, exercisesStrPath, id, STATEMENTS_FOLDER)
+            Path file = Paths.get(baseUploadStrPath, exercisesStrPath, id, folder)
                     .resolve(filename);
             Resource resource = new UrlResource(file.toUri());
 
