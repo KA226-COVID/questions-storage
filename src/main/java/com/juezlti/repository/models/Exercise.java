@@ -34,6 +34,8 @@ public class Exercise {
 	private String statement;
 	private String hint;
 	
+	private String akId;
+	
 	private String type;
 	private String difficulty;
 	private String averageGradeUnderstability;
