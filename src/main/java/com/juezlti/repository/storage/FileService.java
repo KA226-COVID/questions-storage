@@ -2,16 +2,26 @@ package com.juezlti.repository.storage;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.juezlti.repository.models.yapexil.ExerciseMetadata;
+import com.juezlti.repository.models.yapexil.SolutionMetadata;
+import com.juezlti.repository.models.yapexil.StatementMetadata;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -99,6 +109,78 @@ public class FileService {
         return getResource(id, filename, SOLUTIONS_FOLDER);
     }
 
+    public List<Path> getExerciseMetadataFiles(String id, boolean onlyFirstLevel) {
+        Path exFolderPath = Paths.get(baseUploadStrPath, exercisesStrPath, id);
+        int maxDepth = onlyFirstLevel ? 1 : 3;
+        try {
+            return Files
+                    .walk(exFolderPath, maxDepth)
+                    .filter(el -> !el.toFile().isDirectory() && "metadata.json".equals(el.getFileName().toString()))
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    public ExerciseMetadata getExerciseMetadata(String id){
+        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        Optional<Path> path = getExerciseMetadataFiles(id, true).stream().findFirst();
+        try {
+            return objectMapper.readValue(
+                    readFileContentAsString(path.get()),
+                    new TypeReference<ExerciseMetadata>() {}
+            );
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public List<StatementMetadata> getExerciseStatementsMetadata(String exId) {
+        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return getExerciseMetadataFiles(exId, false)
+                .stream()
+                .filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+                .map(el -> {
+                            try {
+                                StatementMetadata aux = objectMapper.readValue(
+                                        readFileContentAsString(el),
+                                        new TypeReference<StatementMetadata>() {}
+                                );
+                                aux.setExerciseId(exId);
+                                return aux;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                return null;
+                            }
+                        }
+                )
+                .collect(Collectors.toList());
+    }
+
+    public List<SolutionMetadata> getExerciseSolutionsMetadata(String exId) {
+        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return getExerciseMetadataFiles(exId, false)
+                .stream()
+                .filter(el -> SOLUTIONS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+                .map(el -> {
+                            try {
+                                SolutionMetadata aux = objectMapper.readValue(
+                                        readFileContentAsString(el),
+                                        new TypeReference<SolutionMetadata>() {}
+                                );
+                                aux.setExerciseId(exId);
+                                return aux;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                return null;
+                            }
+                        }
+                )
+                .collect(Collectors.toList());
+    }
+
     private Resource getResource(String id, String filename, String folder) {
         try {
             Path file = Paths.get(baseUploadStrPath, exercisesStrPath, id, folder)
@@ -113,6 +195,16 @@ public class FileService {
         } catch (MalformedURLException e) {
             throw new RuntimeException("Error: " + e.getMessage());
         }
+    }
+
+    public String readFileContentAsString(Path filePath)
+    {
+        StringBuilder contentBuilder = new StringBuilder();
+        try (Stream<String> stream = Files.lines(filePath, StandardCharsets.UTF_8))
+        {   stream.forEach(s -> contentBuilder.append(s).append("\n")); }
+		catch (IOException e)
+        {   e.printStackTrace();    }
+        return contentBuilder.toString();
     }
 
     public void deleteAll() {
