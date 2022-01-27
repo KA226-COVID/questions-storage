@@ -3,20 +3,21 @@ package com.juezlti.repository.controller;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.nio.file.Paths;
+import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.juezlti.repository.models.yapexil.ExerciseMetadata;
+import com.juezlti.repository.models.yapexil.SolutionMetadata;
+import com.juezlti.repository.models.yapexil.StatementMetadata;
 import com.juezlti.repository.storage.FileService;
 import com.juezlti.repository.storage.FilesController;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import net.lingala.zip4j.ZipFile;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,6 +27,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,6 +39,7 @@ import com.juezlti.repository.models.Exercise;
 import com.juezlti.repository.repository.ExerciseRepository;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import com.juezlti.repository.service.ExerciseService;
 import org.springframework.web.servlet.HandlerMapping;
@@ -103,27 +107,85 @@ public class ExerciseController {
 	}
 
 	@PostMapping("import-file")
-	public ResponseEntity<FilesController.UploadResponseMessage> uploadFile(
-			@RequestParam("exercise") MultipartFile file
+	public ResponseEntity<String> uploadFile(
+			@RequestParam("exercise") MultipartFile file,
+			@RequestParam("PHPSESSID") String phpSessionId
 	) {
 		try {
+			if(file == null || file.getOriginalFilename() == null) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+						.build();
+			}
 			Path savedPath = fileService.save(file, uploadPath);
-			
+			String akId = file.getOriginalFilename().replace(".zip", "");
+
 			ZipFile zipFile = new ZipFile(savedPath.toFile());
 			zipFile.extractAll(
 				fileService.getBaseUploadStrPath() +
 							exercisesPath +
 							"/" +
-							savedPath.getFileName().toString().replace(".zip", "")
+							akId
+			);
+
+			Exercise akExercise = new Exercise();
+			akExercise.setAkId(akId);
+
+			ExerciseMetadata exMetadata = fileService.getExerciseMetadata(akId);
+			List<StatementMetadata> statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
+			List<SolutionMetadata> solutionsMetadata = fileService.getExerciseSolutionsMetadata(akId);
+
+			SolutionMetadata firstSolution = solutionsMetadata
+					.stream()
+					.findFirst()
+					.get();
+			
+			StatementMetadata firstStatement = statementsMetadata
+									.stream()
+									.filter(el -> "en".equals(el.getNat_lang()))
+									.findFirst()
+									.get();
+
+			Map<String, Integer> languagesMap = new HashMap<String, Integer>() {{
+				put("php", 			0);
+				put("java", 		1);
+				put("javascript", 	2);
+				put("python", 		3);
+				put("xpath", 		4);
+			}};
+			
+			akExercise.setTitle(exMetadata.getTitle());
+			switch (firstStatement.getFormat()){
+				case "txt" :
+				case "html":
+					Path statementPath = Paths.get(fileService.getBaseUploadStrPath(), "exercises", firstStatement.getFileStringPath()).toAbsolutePath();
+					String statementContent = fileService.readFileContentAsString(statementPath);
+					akExercise.setStatement(statementContent);
+					break;
+				case "pdf":
+				default:
+					akExercise.setStatement("PDF");
+					break;
+			}
+			akExercise.setDifficulty(
+					capitalize(exMetadata.getDifficulty())
 			);
 			
+			// TODO: Make this dynamic based on CT_Main type
+			akExercise.setType("0");
+			
+			akExercise.setExercise_language(
+					languagesMap.get(firstSolution.getLang().toLowerCase())
+			);
+			
+			Exercise savedExercise = exerciseRepository.save(akExercise);
+			
 			return ResponseEntity.status(HttpStatus.OK)
-					.body(new FilesController.UploadResponseMessage("Uploaded the file successfully: " + file.getOriginalFilename()));
+					.body(savedExercise.getId());
 		} catch (Exception e) {
 			System.out.println("FAILED");
 			System.out.println(e.getMessage());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new FilesController.UploadResponseMessage("Could not upload the file: " + file.getOriginalFilename() + "!"));
+					.body(e.getMessage());
 		}
 	}
 
@@ -134,6 +196,17 @@ public class ExerciseController {
 		List<String> statementsUrl;
 		List<String> testsUrl;
 		List<String> solutionsUrl;
+	}
+
+	@Data
+	@AllArgsConstructor
+	@NoArgsConstructor
+	public class ImportExerciseRequestStruct {
+		@JsonProperty("PHPSESSID")
+		String sessionId;
+
+		@JsonProperty("exercise[]")
+		String exerciseId;
 	}
 
 	@GetMapping("external/{id}")
@@ -287,7 +360,7 @@ public class ExerciseController {
 			total1.add(total);
 			List<Exercise> tests = exerciseRepository.findByExercises4Values(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4, PageRequest.of(page, 10));
 			listas.add(tests);
-		}else {
+		} else {
 			List<String> list4 = value.get(7);
 			total = Math.ceil((double)exerciseRepository.findByExercises4ValuesCount(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4)/10);
 			total1.add(total);
@@ -352,6 +425,13 @@ public class ExerciseController {
 		}
 		listas.add(total1);
 		return listas;
+	}
+
+	public static String capitalize(String str) {
+		if(str == null || str.isEmpty()) {
+			return str;
+		}
+		return str.substring(0, 1).toUpperCase() + str.substring(1);
 	}
 	
 	
