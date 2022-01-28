@@ -146,15 +146,12 @@ public class ExerciseController {
 									.get();
 
 			Map<String, Integer> languagesMap = new HashMap<String, Integer>() {{
-				put("php", 			0);
-				put("java", 		1);
-				put("javascript", 	2);
-				put("python", 		3);
-				put("xpath", 		4);
+				put("xpath", 		0);
+				put("xml", 		0);
 			}};
 			
 			akExercise.setTitle(exMetadata.getTitle());
-			switch (firstStatement.getFormat()){
+			switch (firstStatement.getFormat().toLowerCase()){
 				case "txt" :
 				case "html":
 					Path statementPath = Paths.get(fileService.getBaseUploadStrPath(), "exercises", firstStatement.getFileStringPath()).toAbsolutePath();
@@ -167,14 +164,14 @@ public class ExerciseController {
 					break;
 			}
 			akExercise.setDifficulty(
-					capitalize(exMetadata.getDifficulty())
+					capitalize(exMetadata.getDifficulty().toLowerCase())
 			);
 			
 			// TODO: Make this dynamic based on CT_Main type
 			akExercise.setType("0");
 			
 			akExercise.setExercise_language(
-					languagesMap.get(firstSolution.getLang().toLowerCase())
+					languagesMap.getOrDefault(firstSolution.getLang().toLowerCase(), 0)
 			);
 			
 			Exercise savedExercise = exerciseRepository.save(akExercise);
