@@ -19,6 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.lingala.zip4j.ZipFile;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -153,10 +154,14 @@ public class ExerciseController {
 			akExercise.setTitle(exMetadata.getTitle());
 			switch (firstStatement.getFormat().toLowerCase()){
 				case "txt" :
+					Path statementPathTxt = Paths.get(fileService.getBaseUploadStrPath(), "exercises", firstStatement.getFileStringPath()).toAbsolutePath();
+					String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
+					akExercise.setStatement(StringEscapeUtils.escapeHtml4(statementContentTxt));
+					break;
 				case "html":
-					Path statementPath = Paths.get(fileService.getBaseUploadStrPath(), "exercises", firstStatement.getFileStringPath()).toAbsolutePath();
-					String statementContent = fileService.readFileContentAsString(statementPath);
-					akExercise.setStatement(statementContent);
+					Path statementPathHtml = Paths.get(fileService.getBaseUploadStrPath(), "exercises", firstStatement.getFileStringPath()).toAbsolutePath();
+					String statementContentHtml = fileService.readFileContentAsString(statementPathHtml);
+					akExercise.setStatement(statementContentHtml);
 					break;
 				case "pdf":
 				default:
