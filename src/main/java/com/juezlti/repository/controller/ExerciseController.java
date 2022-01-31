@@ -206,6 +206,16 @@ public class ExerciseController {
 		String exerciseId;
 	}
 
+	@GetMapping("{id}/export")
+	public ResponseEntity<Resource> exportExerciseZip(
+			@PathVariable String id, HttpServletRequest request
+	){
+		Resource file = fileService.load(id+".zip");
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+				.body(file);
+	}
+
 	@GetMapping("external/{id}")
 	public ResponseEntity<ExerciseItem> getAuthorkitExercise(@PathVariable String id){
 		ExerciseItem aux = new ExerciseItem(id, null, null, null);
