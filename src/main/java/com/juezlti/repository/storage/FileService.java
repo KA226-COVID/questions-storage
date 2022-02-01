@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juezlti.repository.models.yapexil.ExerciseMetadata;
 import com.juezlti.repository.models.yapexil.SolutionMetadata;
 import com.juezlti.repository.models.yapexil.StatementMetadata;
+import com.juezlti.repository.models.yapexil.TestMetadata;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -149,6 +150,40 @@ public class FileService {
                                         new TypeReference<StatementMetadata>() {}
                                 );
                                 aux.setExerciseId(exId);
+                                return aux;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                return null;
+                            }
+                        }
+                )
+                .collect(Collectors.toList());
+    }
+
+    public List<TestMetadata> getExerciseTestMetadata(String exId){
+        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
+        return getExerciseMetadataFiles(exId, false)
+                .stream()
+                .filter(el -> TESTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+                .map(el -> {
+                            try {
+                                TestMetadata aux = objectMapper.readValue(
+                                        readFileContentAsString(el),
+                                        new TypeReference<TestMetadata>() {}
+                                );
+                                aux.setExerciseId(exId);
+                                
+                                aux.setInputValue(
+                                        readFileContentAsString(
+                                                Paths.get(aux.calcInputValue(base))
+                                        )
+                                );
+                                aux.setOutputValue(
+                                        readFileContentAsString(
+                                                Paths.get(aux.calcOutputValue(base))
+                                        )
+                                );
                                 return aux;
                             } catch (IOException e) {
                                 e.printStackTrace();

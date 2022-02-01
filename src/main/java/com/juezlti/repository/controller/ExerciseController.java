@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.juezlti.repository.models.yapexil.ExerciseMetadata;
 import com.juezlti.repository.models.yapexil.SolutionMetadata;
 import com.juezlti.repository.models.yapexil.StatementMetadata;
+import com.juezlti.repository.models.yapexil.TestMetadata;
 import com.juezlti.repository.storage.FileService;
 import com.juezlti.repository.storage.FilesController;
 import lombok.AllArgsConstructor;
@@ -219,6 +220,22 @@ public class ExerciseController {
 		return ResponseEntity.ok()
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
 				.body(file);
+	}
+
+	@GetMapping("{id}/statements")
+	public ResponseEntity<List<StatementMetadata>> getExerciseStatements(
+			@PathVariable String id, HttpServletRequest request
+	){
+		return ResponseEntity.ok()
+				.body(fileService.getExerciseStatementsMetadata(id));
+	}
+
+	@GetMapping("{id}/tests")
+	public ResponseEntity<List<TestMetadata>> getExerciseTests(
+			@PathVariable String id, HttpServletRequest request
+	){
+		return ResponseEntity.ok()
+				.body(fileService.getExerciseTestMetadata(id));
 	}
 
 	@GetMapping("external/{id}")
