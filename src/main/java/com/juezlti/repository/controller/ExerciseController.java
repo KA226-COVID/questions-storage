@@ -15,12 +15,11 @@ import com.juezlti.repository.models.yapexil.SolutionMetadata;
 import com.juezlti.repository.models.yapexil.StatementMetadata;
 import com.juezlti.repository.models.yapexil.TestMetadata;
 import com.juezlti.repository.storage.FileService;
-import com.juezlti.repository.storage.FilesController;
+import com.juezlti.repository.util.HtmlFilter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.lingala.zip4j.ZipFile;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +28,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
 import org.springframework.util.AntPathMatcher;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -41,7 +38,6 @@ import com.juezlti.repository.models.Exercise;
 import com.juezlti.repository.repository.ExerciseRepository;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import com.juezlti.repository.service.ExerciseService;
 import org.springframework.web.servlet.HandlerMapping;
@@ -64,6 +60,9 @@ public class ExerciseController {
 	
 	@Autowired
 	private FileService fileService;
+	
+	@Autowired
+	private HtmlFilter htmlFilterFactory;
 	
 	@Autowired
 	private ExerciseService exerciseService;
@@ -155,14 +154,15 @@ public class ExerciseController {
 			akExercise.setTitle(exMetadata.getTitle());
 			switch (firstStatement.getFormat().toLowerCase()){
 				case "txt" :
-					Path statementPathTxt = Paths.get(fileService.getBaseUploadStrPath(), "exercises", firstStatement.getFileStringPath()).toAbsolutePath();
-					String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
-					akExercise.setStatement(StringEscapeUtils.escapeHtml4(statementContentTxt));
-					break;
 				case "html":
-					Path statementPathHtml = Paths.get(fileService.getBaseUploadStrPath(), "exercises", firstStatement.getFileStringPath()).toAbsolutePath();
-					String statementContentHtml = fileService.readFileContentAsString(statementPathHtml);
-					akExercise.setStatement(statementContentHtml);
+					Path statementPathTxt = Paths.get(
+							fileService.getBaseUploadStrPath(),
+							"exercises",
+							firstStatement.getFileStringPath()
+					).toAbsolutePath();
+
+					String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
+					akExercise.setStatement(htmlFilterFactory.policyFactory().sanitize(statementContentTxt));
 					break;
 				case "pdf":
 				default:
