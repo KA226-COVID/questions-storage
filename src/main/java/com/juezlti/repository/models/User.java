@@ -1,6 +1,7 @@
 package com.juezlti.repository.models;
 
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -25,14 +26,15 @@ public class User {
     private String displayName;
 
     @JsonProperty("username")
+    @JsonAlias("email")
     @Indexed(unique=true)
     private String userName;
 
     @JsonProperty("profile_id")
     private String profileId;
 
-    @JsonProperty("email")
-    private String email;
+    @JsonProperty("contact-email")
+    private String contactEmail;
 
     @JsonProperty( value = "password", access = JsonProperty.Access.WRITE_ONLY)
     private String password;

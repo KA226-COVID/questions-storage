@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import com.juezlti.repository.models.User;
 import com.juezlti.repository.repository.UserRepository;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.security.core.userdetails.UserDetails;
@@ -41,6 +40,9 @@ public class UsersAuthService implements UserDetailsService {
 				Optional.ofNullable(user.getDisplayName())
 						.orElse(user.getUserName().toLowerCase())
 		);
+		if(user.getUserName().contains("@")){
+			user.setContactEmail(user.getUserName().toLowerCase());
+		}
 		user.setPassword(bcryptEncoder.encode(user.getPassword()));
 		return userRepository.save(user);
 	}
