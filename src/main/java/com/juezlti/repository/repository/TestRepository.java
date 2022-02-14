@@ -29,6 +29,9 @@ public interface TestRepository extends MongoRepository<Test, String> {
 	@Query(value = "{ '_class' : 'com.juezlti.repository.models.Exercise', 'id' : ?0 }")
 	Exercise findExerciseById(String id);
 
+	@Query(value = "{ '_class' : 'com.juezlti.repository.models.Exercise', 'akId' : ?0 }")
+	Exercise findExerciseByAkId(String id);
+
 	List<Test> findByExercisesTypeIn(List<String> value);
 
 	List<Test> findByExercisesDifficultyIn(List<String> value);

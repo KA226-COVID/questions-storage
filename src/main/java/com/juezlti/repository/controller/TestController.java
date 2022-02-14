@@ -122,6 +122,11 @@ public class TestController {
 		return testRepository.findExerciseById(value);
 	}
 
+	@GetMapping(path = "/getExercise/id/{value}")
+	public Exercise getExerciseAkId(@PathVariable("value") String value) {
+		return testRepository.findExerciseByAkId(value);
+	}
+
 	@GetMapping(path = "/getTestId/{value}")
 	public Optional<Test> getTestId(@PathVariable("value") String value) {
 
