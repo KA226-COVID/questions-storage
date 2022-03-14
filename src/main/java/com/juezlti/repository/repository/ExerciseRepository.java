@@ -95,4 +95,6 @@ public interface ExerciseRepository extends MongoRepository<Exercise, String> {
 
 	List<Test> findByKeywordsIn(List<String> keywords);
 
+	Exercise findByAkId(String akId);
+
 }

@@ -76,8 +76,12 @@ public class FileService {
             if (!Files.exists(root)) {
                 Files.createDirectories(root);
             }
+
             Path destiny = root.resolve(file.getOriginalFilename());
-            Files.copy(file.getInputStream(), destiny);
+            if(!Files.exists(destiny)) {
+                Files.copy(file.getInputStream(), destiny);
+            }
+
             return destiny;
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());

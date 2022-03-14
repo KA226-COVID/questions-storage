@@ -117,6 +117,7 @@ public class ExerciseController {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 						.build();
 			}
+			
 			Path savedPath = fileService.save(file, uploadPath);
 			String akId = file.getOriginalFilename().replace(".zip", "");
 
@@ -128,62 +129,70 @@ public class ExerciseController {
 							akId
 			);
 
-			Exercise akExercise = new Exercise();
-			akExercise.setAkId(akId);
+			Optional<Exercise> repositoryExercise = Optional.ofNullable(exerciseRepository.findByAkId(akId));
 
-			ExerciseMetadata exMetadata = fileService.getExerciseMetadata(akId);
-			List<StatementMetadata> statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
-			List<SolutionMetadata> solutionsMetadata = fileService.getExerciseSolutionsMetadata(akId);
+			if(!repositoryExercise.isPresent()){
 
-			SolutionMetadata firstSolution = solutionsMetadata
-					.stream()
-					.findFirst()
-					.get();
+				Exercise akExercise = new Exercise();
+				akExercise.setAkId(akId);
+				ExerciseMetadata exMetadata = fileService.getExerciseMetadata(akId);
+				List<StatementMetadata> statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
+				List<SolutionMetadata> solutionsMetadata = fileService.getExerciseSolutionsMetadata(akId);
+
+				SolutionMetadata firstSolution = solutionsMetadata
+						.stream()
+						.findFirst()
+						.get();
 			
-			StatementMetadata firstStatement = statementsMetadata
+				StatementMetadata firstStatement = statementsMetadata
 									.stream()
 									.filter(el -> "en".equals(el.getNat_lang()))
 									.findFirst()
 									.get();
 
-			Map<String, Integer> languagesMap = new HashMap<String, Integer>() {{
-				put("xpath", 		0);
-				put("xml", 		0);
-			}};
+				Map<String, Integer> languagesMap = new HashMap<String, Integer>() {{
+					put("xpath", 		0);
+					put("xml", 		0);
+				}};
 			
-			akExercise.setTitle(exMetadata.getTitle());
-			switch (firstStatement.getFormat().toLowerCase()){
-				case "txt" :
-				case "html":
-					Path statementPathTxt = Paths.get(
-							fileService.getBaseUploadStrPath(),
-							"exercises",
-							firstStatement.getFileStringPath()
-					).toAbsolutePath();
+				akExercise.setTitle(exMetadata.getTitle());
+				switch (firstStatement.getFormat().toLowerCase()){
+					case "txt" :
+					case "html":
+						Path statementPathTxt = Paths.get(
+								fileService.getBaseUploadStrPath(),
+								"exercises",
+								firstStatement.getFileStringPath()
+						).toAbsolutePath();
 
-					String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
-					akExercise.setStatement(htmlFilterFactory.policyFactory().sanitize(statementContentTxt));
-					break;
-				case "pdf":
-				default:
-					akExercise.setStatement("PDF");
-					break;
-			}
-			akExercise.setDifficulty(
-					capitalize(exMetadata.getDifficulty().toLowerCase())
+						String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
+						akExercise.setStatement(htmlFilterFactory.policyFactory().sanitize(statementContentTxt));
+						break;
+					case "pdf":
+					default:
+						akExercise.setStatement("PDF");
+						break;
+				}
+				akExercise.setDifficulty(
+						capitalize(exMetadata.getDifficulty().toLowerCase())
+				);
+			
+				// TODO: Make this dynamic based on CT_Main type
+				akExercise.setType("0");
+			
+				akExercise.setExercise_language(
+						languagesMap.getOrDefault(firstSolution.getLang().toLowerCase(), 0)
 			);
-			
-			// TODO: Make this dynamic based on CT_Main type
-			akExercise.setType("0");
-			
-			akExercise.setExercise_language(
-					languagesMap.getOrDefault(firstSolution.getLang().toLowerCase(), 0)
-			);
-			
+
 			Exercise savedExercise = exerciseRepository.save(akExercise);
 			
 			return ResponseEntity.status(HttpStatus.OK)
 					.body(savedExercise.getId());
+			}else{
+				return ResponseEntity.status(HttpStatus.OK)
+						.body((repositoryExercise.get()).getId());
+			}
+						
 		} catch (Exception e) {
 			System.out.println("FAILED");
 			System.out.println(e.getMessage());
