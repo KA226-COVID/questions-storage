@@ -14,7 +14,7 @@ public interface ExerciseRepository extends MongoRepository<Exercise, String> {
 
 	List<Exercise> findByTitleIgnoreCase(String title);
 
-	List<Exercise> findByTypeInIgnoreCase(List<String> type);
+	
 
 	List<Exercise> findByDifficultyInIgnoreCase(List<String> difficulty);
 
@@ -22,7 +22,7 @@ public interface ExerciseRepository extends MongoRepository<Exercise, String> {
 
 	List<Exercise> findByIdIn(Collection<String> id);
 
-	List<Exercise> findByDifficultyInIgnoreCaseAndTypeInIgnoreCase(List<String> difficulty, List<String> type);
+	
 
 	@Query(value = "{ '_class' : 'com.juezlti.repository.models.Exercise' }", count = true)
 	public Long findAllExercises();

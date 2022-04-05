@@ -1,5 +1,8 @@
 package com.juezlti.repository.storage;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
@@ -12,9 +15,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import javax.annotation.PostConstruct;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -29,7 +32,6 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
-
 import static com.juezlti.repository.service.ExerciseService.*;
 
 @Service
@@ -149,6 +151,7 @@ public class FileService {
                 .filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
                 .map(el -> {
                             try {
+                                
                                 StatementMetadata aux = objectMapper.readValue(
                                         readFileContentAsString(el),
                                         new TypeReference<StatementMetadata>() {}
@@ -167,6 +170,8 @@ public class FileService {
     public List<TestMetadata> getExerciseTestMetadata(String exId){
         ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
+
+        
         return getExerciseMetadataFiles(exId, false)
                 .stream()
                 .filter(el -> TESTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
@@ -264,4 +269,44 @@ public class FileService {
             throw new RuntimeException("Could not list the files!");
         }
     }
+
+    public void addFolder(String route, String folder, ZipOutputStream zip)throws Exception{
+
+        File directory = new File(folder);        
+        for( String filename : directory.list()){
+            if(route.equals("")){
+                addFile(directory.getName(),folder + "/" + filename,zip);
+            }else{
+                addFile(route + "/" + directory.getName(),folder + "/" + filename,zip);
+            }
+        }
+
+    }
+
+    public void addFile(String route, String directory, ZipOutputStream zip)throws Exception{
+
+        File file = new File(directory);
+        if(file.isDirectory()){
+            this.addFolder(route, directory, zip);
+        }else{
+            byte[] buffer = new byte[1024];
+            FileInputStream inputStream = new FileInputStream(file);
+            int reader;
+            zip.putNextEntry(new ZipEntry(route + "/" + file.getName()));
+            while(0 < (reader = inputStream.read(buffer))){
+
+                zip.write(buffer,0,reader);
+
+                }   
+            }
+    }
+   
+    public void compress(String file, String zipFile)throws Exception{
+
+        ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(zipFile));
+        addFolder("", file, zip);
+        zip.flush();
+        zip.close();
+    }
+
 }

@@ -4,6 +4,7 @@ package com.juezlti.repository.models;
 import java.util.Date;
 import java.util.List;
 
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
@@ -18,7 +19,6 @@ public class Exercise {
 
 	@Id
 	private String id;
-
 	private String title;
 	private String module;
 	private String owner_id;
@@ -32,31 +32,21 @@ public class Exercise {
 	private Date updated_at;
 	private Date created_at;
 	private String statement;
-	private String hint;
-	
-	private String akId;
-	
-	private String type;
+	private String hint;	
+	private String akId;	
 	private String difficulty;
 	private String averageGradeUnderstability;
 	private String averageGradeDifficulty;
 	private String averageGradeTime;
 	private String averageGrade;
 	private String numberVotes;
-	private String exercise_solution;
-	
+	private String exercise_solution;	
 	private String exercise_must;
 	private String exercise_musnt;
-
-	// SQL
-	private Integer exercise_dbms;
-	private String exercise_sql_type;
-	private String exercise_database;
-	private String exercise_probe;
-	private String exercise_onfly;
+	private String session_language = "en";
 	
 	//Code
-	private Integer exercise_language;
+	private String exercise_language;
 	private String exercise_input_test;
 	private String exercise_input_grade;
 	private String exercise_output_test;
@@ -66,9 +56,34 @@ public class Exercise {
 	@Transient
 	@JsonProperty("isCodeExercise")
 	private boolean codeExercise;
-	@Transient
-	@JsonProperty("isSqlExercise")
-	private boolean sqlExercise;
+	
+	public String generateFoldersId(){
 
+		String id = "";
 
+        for (int i = 1; i < 32; i++) {
+
+            if (i == 9 || i == 14 || i == 19) {
+
+                id += "-";
+
+            } else {
+
+                int azar = (int)(Math.random()*2);
+
+                if (azar > 0) {
+
+                    id += (int)(Math.random()*11);
+                   
+                } else {
+                    
+                    id += (char)(Math.random()*(122-97)+(97)); 
+
+                } 
+            }        
+        }
+		
+		return id;
+    }
+	
 }

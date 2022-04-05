@@ -1,5 +1,8 @@
 package com.juezlti.repository.controller;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -20,7 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.lingala.zip4j.ZipFile;
-import org.json.JSONArray;
+
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +45,11 @@ import org.springframework.web.multipart.MultipartFile;
 import com.juezlti.repository.service.ExerciseService;
 import org.springframework.web.servlet.HandlerMapping;
 
+import static com.juezlti.repository.service.ExerciseService.STATEMENTS_FOLDER;
+import static com.juezlti.repository.service.ExerciseService.SOLUTIONS_FOLDER;
+import static com.juezlti.repository.service.ExerciseService.TESTS_FOLDER;
+
+import com.google.gson.*;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
@@ -75,22 +83,189 @@ public class ExerciseController {
 
 	@PostMapping(path = "/createExercise")
 	public String createExercises(@RequestBody String exerciseJson) {
-		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-				false);
+
+		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 		List<Exercise> exercises = new ArrayList<>();
-		JSONArray jsonArray = new JSONArray();
-		String jsonResponse="";
 		Exercise createdExercise;
-		JSONObject jsonObject = null;
+		String jsonResponse="";
+		String jsonObject = null;
+		JSONObject jsonResult = null;
 
 		try {
 			exercises = objectMapper.readValue(exerciseJson, new TypeReference<List<Exercise>>() {
 			});
-			for (Exercise q : exercises) {
+			for (Exercise receivedExercise : exercises) {
 				try {
+					
+					GsonBuilder builder = new GsonBuilder();
+					Gson gson = builder.create();
+					Date actualDate = new Date();
+
+					receivedExercise.setCreated_at(actualDate);					
+					createdExercise = exerciseRepository.save(receivedExercise);
+					createdExercise.setAkId(createdExercise.getId());
+					exerciseRepository.save(createdExercise);
+									
+					String exerciseDirectory = fileService.getBaseUploadStrPath() +
+					fileService.getExercisesStrPath() +
+					"/" +
+					createdExercise.getId();
+
+					String uploadDirectory = fileService.getBaseUploadStrPath() +
+					fileService.getUploadStrPath() +
+					"/" +
+					createdExercise.getId();
+
+					Path exerciseMainPath = Paths.get(exerciseDirectory);
+
+					if (!Files.exists(exerciseMainPath)) {
+
+						Files.createDirectory(exerciseMainPath);
+						File file = new File(exerciseDirectory + File.separator + "metadata.json");
+
+						if (! file.getParentFile ().exists()) {
+
+							file.getParentFile().mkdirs();
+
+						}
+						if (file.exists ()) {
+
+							file.delete();
+
+						}
+
+						file.createNewFile();
+						ExerciseMetadata exerciseMetadata = new ExerciseMetadata(createdExercise);
+						SolutionMetadata solutionMetadata = new SolutionMetadata(createdExercise);
+						StatementMetadata statementMetadata = new StatementMetadata(createdExercise);
+						TestMetadata testMetadata = new TestMetadata(createdExercise);
+
+						jsonObject = gson.toJson(exerciseMetadata);
+						BufferedWriter br = new BufferedWriter(new FileWriter(file));
+						br.write(jsonObject);
+						br.flush();
+						br.close();
 						
-					createdExercise = exerciseRepository.save(q);
-					 jsonObject = new JSONObject(createdExercise);
+						String fileTestDirectory = exerciseDirectory + "/" + TESTS_FOLDER;
+						String fileSolutionsDirectory = exerciseDirectory + "/" + SOLUTIONS_FOLDER;
+						String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
+						Files.createDirectories(Paths.get(fileTestDirectory));
+						Files.createDirectories(Paths.get(fileSolutionsDirectory));
+						Files.createDirectories(Paths.get(fileStatementsDirectory));
+
+						////TEST
+						File testFile = new File(fileTestDirectory + "/" + testMetadata.getId() + "/" +"metadata.json");
+
+						if (! testFile.getParentFile ().exists()) {
+
+							testFile.getParentFile().mkdirs();
+
+						}
+						if (!testFile.exists ()) {
+
+							testFile.createNewFile();
+
+						}
+															
+						jsonObject = gson.toJson(testMetadata);
+						br = new BufferedWriter(new FileWriter(testFile));
+						br.write(jsonObject);
+						br.flush();
+						br.close();
+						
+						String inputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/input.txt";
+						String outputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/output.txt";
+
+						br = new BufferedWriter(new FileWriter(inputTestDirectory));
+						br.write(createdExercise.getExercise_input_test());
+						br.flush();
+						br.close();
+
+						br = new BufferedWriter(new FileWriter(outputTestDirectory));
+						br.write(createdExercise.getExercise_output_test());
+						br.flush();
+						br.close();
+						////TEST
+
+						////STATEMETN
+						File statementFile = new File(fileStatementsDirectory + "/" + statementMetadata.getId() + "/" +"metadata.json");
+
+						if (! statementFile.getParentFile().exists()) {
+
+							statementFile.getParentFile().mkdirs();
+
+						}
+						if (!statementFile.exists()) {
+
+							statementFile.createNewFile();
+
+						}
+															
+						jsonObject = gson.toJson(statementMetadata);
+						br = new BufferedWriter(new FileWriter(statementFile));
+						br.write(jsonObject);
+						br.flush();
+						br.close();
+						
+						File statementLabel = new File(fileStatementsDirectory + "/" + statementMetadata.getStatementStringPath());					
+						if (!statementLabel.exists()) {
+
+							statementLabel.createNewFile();	
+
+						}
+
+						br = new BufferedWriter(new FileWriter(statementLabel));
+						br.write(createdExercise.getStatement());
+						br.flush();
+						br.close();
+						// STATEMENT
+
+						// SOLUTION
+						File solutionFile = new File(fileSolutionsDirectory + "/" + solutionMetadata.getId() + "/" +"metadata.json");
+
+						if (! solutionFile.getParentFile ().exists()) {
+
+							solutionFile.getParentFile().mkdirs();
+
+						}
+						if (!solutionFile.exists ()) {
+
+							solutionFile.createNewFile();
+
+						}
+															
+						jsonObject = gson.toJson(solutionMetadata);
+						br = new BufferedWriter(new FileWriter(solutionFile));
+						br.write(jsonObject);
+						br.flush();
+						br.close();
+						
+						File solutionLabel = new File(fileSolutionsDirectory + "/" + solutionMetadata.getSolutionStringPath());
+						
+						if (!solutionLabel.exists ()) {
+
+							solutionLabel.createNewFile();
+
+						}
+									
+						br = new BufferedWriter(new FileWriter(solutionLabel));
+						br.write(createdExercise.getExercise_solution());
+						br.flush();
+						br.close();	
+						// SOLUTION
+						
+						//ZIP
+						String uploadDestiny = uploadDirectory + ".zip";
+						fileService.compress(exerciseDirectory, uploadDestiny);
+						//ZIP
+
+						jsonResult = new JSONObject(createdExercise);
+
+					} else {
+						
+					System.out.println("Directory already exists");
+
+					}
 
 				} catch (Exception ex) {
 					log.error("Unexpected error trying to create exercise {}", ex);
@@ -98,7 +273,7 @@ public class ExerciseController {
 				}
 			}
 
-			jsonResponse = jsonObject.toString();
+			jsonResponse = jsonResult.toString();
 
 		} catch (JsonProcessingException e) {
 			log.warn("Failure processing JSON", e);
@@ -106,7 +281,7 @@ public class ExerciseController {
 		}
 		return jsonResponse;
 	}
-
+	
 	@PostMapping("import-file")
 	public ResponseEntity<String> uploadFile(
 			@RequestParam("exercise") MultipartFile file,
@@ -150,11 +325,6 @@ public class ExerciseController {
 									.findFirst()
 									.get();
 
-				Map<String, Integer> languagesMap = new HashMap<String, Integer>() {{
-					put("xpath", 		0);
-					put("xml", 		0);
-				}};
-			
 				akExercise.setTitle(exMetadata.getTitle());
 				switch (firstStatement.getFormat().toLowerCase()){
 					case "txt" :
@@ -176,13 +346,10 @@ public class ExerciseController {
 				akExercise.setDifficulty(
 						capitalize(exMetadata.getDifficulty().toLowerCase())
 				);
-			
-				// TODO: Make this dynamic based on CT_Main type
-				akExercise.setType("0");
-			
-				akExercise.setExercise_language(
-						languagesMap.getOrDefault(firstSolution.getLang().toLowerCase(), 0)
-			);
+
+			 	akExercise.setExercise_language(
+			 			firstSolution.getLang().toLowerCase()
+			 );
 
 			Exercise savedExercise = exerciseRepository.save(akExercise);
 			

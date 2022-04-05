@@ -1,16 +1,12 @@
 package com.juezlti.repository.models;
 
-
 import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
 import lombok.Data;
 
 @Data
@@ -24,7 +20,7 @@ public class User {
 
     @JsonProperty("displayname")
     private String displayName;
-
+    
     @JsonProperty("username")
     @JsonAlias("email")
     @Indexed(unique=true)
