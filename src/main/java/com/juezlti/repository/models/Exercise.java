@@ -1,6 +1,7 @@
 package com.juezlti.repository.models;
 
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -22,6 +23,8 @@ public class Exercise {
 	private String title;
 	private String module;
 	private String owner_id;
+	private String owner;
+	private String author;
 	private String project_id;
 	private List<String> keywords;
 	private String event;
@@ -29,8 +32,8 @@ public class Exercise {
 	private String status;
 	private Number timeout;
 	private List<String> programmingLanguages;
-	private Date updated_at;
-	private Date created_at;
+	private LocalDateTime updated_at;
+	private LocalDateTime created_at;
 	private String statement;
 	private String hint;	
 	private String akId;	
@@ -43,7 +46,7 @@ public class Exercise {
 	private String exercise_solution;	
 	private String exercise_must;
 	private String exercise_musnt;
-	private String session_language = "en";
+	private String sessionLanguage = "en";
 	
 	//Code
 	private String exercise_language;
@@ -56,34 +59,5 @@ public class Exercise {
 	@Transient
 	@JsonProperty("isCodeExercise")
 	private boolean codeExercise;
-	
-	public String generateFoldersId(){
 
-		String id = "";
-
-        for (int i = 1; i < 32; i++) {
-
-            if (i == 9 || i == 14 || i == 19) {
-
-                id += "-";
-
-            } else {
-
-                int azar = (int)(Math.random()*2);
-
-                if (azar > 0) {
-
-                    id += (int)(Math.random()*11);
-                   
-                } else {
-                    
-                    id += (char)(Math.random()*(122-97)+(97)); 
-
-                } 
-            }        
-        }
-		
-		return id;
-    }
-	
 }

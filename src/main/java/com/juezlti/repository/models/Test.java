@@ -11,7 +11,6 @@ public class Test {
 
 	@Id
 	private String id;
-
 	private String name; //statement
 	private String description;
 	private String status;

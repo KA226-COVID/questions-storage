@@ -5,24 +5,23 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 public class SolutionMetadata {
     String id;
-    String exerciseId;
     String pathname; 
     String lang;
 
     public SolutionMetadata(Exercise exercise){
-        this.id = exercise.generateFoldersId();
-        this.exerciseId = exercise.getId();
+        this.id = UUID.randomUUID().toString();
         this.lang  = exercise.getExercise_language();
-        this.pathname = "solution.";             
+        this.pathname = "solution." + exercise.getExercise_language().toLowerCase();             
     }
 
     public String getSolutionStringPath(){
-        return this.getId() + "/" + this.getPathname()+this.lang;
+        return this.getId() + "/" + this.getPathname();
     }
     
     public Path getSolutionPath(){
