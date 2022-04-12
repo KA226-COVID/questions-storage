@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.lingala.zip4j.ZipFile;
-import org.json.JSONArray;
+
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 import com.juezlti.repository.service.ExerciseService;
 import org.springframework.web.servlet.HandlerMapping;
-
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
@@ -75,22 +74,21 @@ public class ExerciseController {
 
 	@PostMapping(path = "/createExercise")
 	public String createExercises(@RequestBody String exerciseJson) {
-		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-				false);
+
+		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 		List<Exercise> exercises = new ArrayList<>();
-		JSONArray jsonArray = new JSONArray();
+		Exercise createdExercise = new Exercise();
 		String jsonResponse="";
-		Exercise createdExercise;
-		JSONObject jsonObject = null;
+		String jsonObject = null;
+		JSONObject jsonResult = null;
 
 		try {
 			exercises = objectMapper.readValue(exerciseJson, new TypeReference<List<Exercise>>() {
 			});
-			for (Exercise q : exercises) {
+			for (Exercise receivedExercise : exercises) {
 				try {
-						
-					createdExercise = exerciseRepository.save(q);
-					 jsonObject = new JSONObject(createdExercise);
+
+					jsonResult = fileService.generateMetadatas(receivedExercise,jsonObject,createdExercise);											
 
 				} catch (Exception ex) {
 					log.error("Unexpected error trying to create exercise {}", ex);
@@ -98,7 +96,7 @@ public class ExerciseController {
 				}
 			}
 
-			jsonResponse = jsonObject.toString();
+			jsonResponse = jsonResult.toString();
 
 		} catch (JsonProcessingException e) {
 			log.warn("Failure processing JSON", e);
@@ -106,12 +104,14 @@ public class ExerciseController {
 		}
 		return jsonResponse;
 	}
-
+	
 	@PostMapping("import-file")
 	public ResponseEntity<String> uploadFile(
 			@RequestParam("exercise") MultipartFile file,
-			@RequestParam("PHPSESSID") String phpSessionId
+			@RequestParam("PHPSESSID") String phpSessionId,
+			@RequestParam("sessionLanguage") String sessionLanguage
 	) {
+		Exercise savedExercise;
 		try {
 			if(file == null || file.getOriginalFilename() == null) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -131,67 +131,14 @@ public class ExerciseController {
 
 			Optional<Exercise> repositoryExercise = Optional.ofNullable(exerciseRepository.findByAkId(akId));
 
-			if(!repositoryExercise.isPresent()){
+			if(repositoryExercise.isPresent()){
 
-				Exercise akExercise = new Exercise();
-				akExercise.setAkId(akId);
-				ExerciseMetadata exMetadata = fileService.getExerciseMetadata(akId);
-				List<StatementMetadata> statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
-				List<SolutionMetadata> solutionsMetadata = fileService.getExerciseSolutionsMetadata(akId);
-
-				SolutionMetadata firstSolution = solutionsMetadata
-						.stream()
-						.findFirst()
-						.get();
-			
-				StatementMetadata firstStatement = statementsMetadata
-									.stream()
-									.filter(el -> "en".equals(el.getNat_lang()))
-									.findFirst()
-									.get();
-
-				Map<String, Integer> languagesMap = new HashMap<String, Integer>() {{
-					put("xpath", 		0);
-					put("xml", 		0);
-				}};
-			
-				akExercise.setTitle(exMetadata.getTitle());
-				switch (firstStatement.getFormat().toLowerCase()){
-					case "txt" :
-					case "html":
-						Path statementPathTxt = Paths.get(
-								fileService.getBaseUploadStrPath(),
-								"exercises",
-								firstStatement.getFileStringPath()
-						).toAbsolutePath();
-
-						String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
-						akExercise.setStatement(htmlFilterFactory.policyFactory().sanitize(statementContentTxt));
-						break;
-					case "pdf":
-					default:
-						akExercise.setStatement("PDF");
-						break;
-				}
-				akExercise.setDifficulty(
-						capitalize(exMetadata.getDifficulty().toLowerCase())
-				);
-			
-				// TODO: Make this dynamic based on CT_Main type
-				akExercise.setType("0");
-			
-				akExercise.setExercise_language(
-						languagesMap.getOrDefault(firstSolution.getLang().toLowerCase(), 0)
-			);
-
-			Exercise savedExercise = exerciseRepository.save(akExercise);
-			
-			return ResponseEntity.status(HttpStatus.OK)
-					.body(savedExercise.getId());
-			}else{
-				return ResponseEntity.status(HttpStatus.OK)
-						.body((repositoryExercise.get()).getId());
+				exerciseRepository.deleteById(repositoryExercise.get().getId());
+				
 			}
+
+			savedExercise = createRepositoryExercise(akId, sessionLanguage);
+			return ResponseEntity.status(HttpStatus.OK).body(savedExercise.getId());
 						
 		} catch (Exception e) {
 			System.out.println("FAILED");
@@ -502,6 +449,81 @@ public class ExerciseController {
 	
 	listas.add(total1);
 	return listas;
+	}
+
+	public StatementMetadata searchFirstStatement(String sessionLanguage, List<StatementMetadata> statementsMetadata, String akId){
+		return searchFirstStatement(sessionLanguage, statementsMetadata, akId, "en");
+	}
+
+	public StatementMetadata searchFirstStatement(String sessionLanguage, List<StatementMetadata> statementsMetadata, String akId, String fallbackLanguage){
+		try {
+			statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
+			StatementMetadata firstStatement = statementsMetadata
+									.stream()									
+									.filter(el -> sessionLanguage.equals(el.getNat_lang()))
+									.findFirst()
+									.get();
+
+									return firstStatement;
+		} catch(Exception i){
+			if(fallbackLanguage != null){
+				return searchFirstStatement(fallbackLanguage, statementsMetadata, akId, null);
+			}
+			statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
+			StatementMetadata firstStatement = statementsMetadata
+								.stream()																		
+								.findFirst()
+								.get();
+			return firstStatement;
+		}
+
+	}
+
+	public Exercise createRepositoryExercise(String akId, String sessionLanguage){
+
+				Exercise akExercise = new Exercise();
+				akExercise.setAkId(akId);
+				akExercise.setSessionLanguage(sessionLanguage);
+				ExerciseMetadata exMetadata = fileService.getExerciseMetadata(akId);
+				List<StatementMetadata> statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
+				List<SolutionMetadata> solutionsMetadata = fileService.getExerciseSolutionsMetadata(akId);
+
+				SolutionMetadata firstSolution = solutionsMetadata
+						.stream()
+						.findFirst()
+						.get();
+			
+				StatementMetadata firstStatement = searchFirstStatement(sessionLanguage,statementsMetadata,akId);									
+
+				akExercise.setTitle(exMetadata.getTitle());
+				switch (firstStatement.getFormat().toLowerCase()){
+					case "txt" :
+					case "html":
+						Path statementPathTxt = Paths.get(
+								fileService.getBaseUploadStrPath(),
+								"exercises",
+								firstStatement.getFileStringPath()
+						).toAbsolutePath();
+
+						String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
+						akExercise.setStatement(htmlFilterFactory.policyFactory().sanitize(statementContentTxt));
+						break;
+					case "pdf":
+					default:
+						akExercise.setStatement("PDF");
+						break;
+				}
+				akExercise.setDifficulty(
+						capitalize(exMetadata.getDifficulty().toLowerCase())
+				);
+
+			 	akExercise.setExercise_language(
+			 			firstSolution.getLang().toLowerCase()
+			 );
+
+			Exercise savedExercise = exerciseRepository.save(akExercise);
+
+			return savedExercise;
 	}
 
 }

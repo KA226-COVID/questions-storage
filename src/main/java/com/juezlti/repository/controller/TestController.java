@@ -145,11 +145,7 @@ public class TestController {
 		return testRepository.findByIdOrExercisesId(value, value);
 	}
 
-	@GetMapping(path = "/getTestExerciseType")
-	public List<Test> getTestExerciseType(@RequestBody List<String> value) {
 
-		return testRepository.findByExercisesTypeIn(value);
-	}
 
 	@GetMapping(path = "/getTestExerciseDifficulty")
 	public List<Test> getTestExerciseDifficulty(@RequestBody List<String> value) {
@@ -290,23 +286,13 @@ public class TestController {
 	}
 
 
-	@GetMapping(path = "/type")
-	public List<Exercise> getExercisesType(@RequestBody List<String> value) {
-
-		return exerciseRepository.findByTypeInIgnoreCase(value);
-	}
 
 	@GetMapping(path = "/difficulty")
 	public List<Exercise> getExercisesDifficulty(@RequestBody List<String> value) {
 		return exerciseRepository.findByDifficultyInIgnoreCase(value);
 	}
 
-	@GetMapping(path = "/difficultyType")
-	public List<Exercise> getExercisesDifficultyType(@RequestBody List<List<String>> value) {
-		List<String> difficulty = value.get(0);
-		List<String> type = value.get(1);
-		return exerciseRepository.findByDifficultyInIgnoreCaseAndTypeInIgnoreCase(difficulty, type);
-	}
+	
 
 	@GetMapping(path = "/title/{value}")
 	public List<Exercise> getExercisesTitle(@PathVariable("value") String value) {
