@@ -16,11 +16,13 @@ public class StatementMetadata {
     String pathname;
     String nat_lang;
     String format = "HTML";
+    private String exerciseId;
 
     public StatementMetadata(Exercise exercise){
         this.id = UUID.randomUUID().toString();
         this.nat_lang = exercise.getSessionLanguage();
         this.pathname = "statement." + this.format.toLowerCase();
+        this.exerciseId = exercise.getAkId();
     }
     
     public String getStatementStringPath(){
@@ -32,7 +34,7 @@ public class StatementMetadata {
     }
 
     public String getFileStringPath(){
-        return this.getId() + "/" + STATEMENTS_FOLDER + "/" + this.getId() + "/" + this.getPathname();
+        return this.getExerciseId() + "/" + STATEMENTS_FOLDER + "/" + this.getId() + "/" + this.getPathname();
     }
     
     public Path getFilePath(){
