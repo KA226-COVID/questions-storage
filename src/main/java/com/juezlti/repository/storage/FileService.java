@@ -172,7 +172,7 @@ public class FileService {
                                         readFileContentAsString(el),
                                         new TypeReference<StatementMetadata>() {}
                                 );
-                                aux.setId(exId);
+                                aux.setExerciseId(exId);
                                 return aux;
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -197,7 +197,7 @@ public class FileService {
                                         readFileContentAsString(el),
                                         new TypeReference<TestMetadata>() {}
                                 );
-                                aux.setAkId(exId);                               
+                                aux.setExerciseId(exId);                               
                                 aux.setInputValue(
                                         readFileContentAsString(
                                                 Paths.get(aux.calcInputValue(base))
@@ -229,7 +229,7 @@ public class FileService {
                                         readFileContentAsString(el),
                                         new TypeReference<SolutionMetadata>() {}
                                 );
-                                aux.setId(exId);
+                                aux.setExerciseId(exId);
                                 return aux;
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -301,7 +301,6 @@ public class FileService {
     }
 
     public void addFile(String route, String directory, ZipOutputStream zip,int vueltas)throws Exception{
-        System.out.println("RUTA ADDFILE| " );
         File file = new File(directory);
         if(file.isDirectory()){
             this.addFolder(route, directory, zip);
@@ -328,14 +327,14 @@ public class FileService {
         zip.close();
     }
 
-    public JSONObject generateMetadatas(Exercise receivedExercise,String jsonObject,Exercise createdExercise) throws Exception{
+    public JSONObject generateMetadatas(Exercise receivedExercise) throws Exception{
 
 		GsonBuilder builder = new GsonBuilder();
 		Gson gson = builder.create();
 		LocalDateTime actualDate = LocalDateTime.now();
 		JSONObject jsonResult = null;
 		receivedExercise.setCreated_at(actualDate);								
-		createdExercise = exerciseRepository.save(receivedExercise);
+		Exercise createdExercise = exerciseRepository.save(receivedExercise);
 		createdExercise.setAkId(UUID.randomUUID().toString());
 		exerciseRepository.save(createdExercise);
 
@@ -358,7 +357,7 @@ public class FileService {
 			Files.createDirectory(exerciseMainPath);
 			File file = new File(exerciseDirectory + File.separator + "metadata.json");
 
-			if (! file.getParentFile ().exists()) {
+			if (!file.getParentFile().exists()) {
 
 				file.getParentFile().mkdirs();
 
@@ -375,7 +374,7 @@ public class FileService {
 			StatementMetadata statementMetadata = new StatementMetadata(createdExercise);
 			TestMetadata testMetadata = new TestMetadata(createdExercise);
 
-			jsonObject = gson.toJson(exerciseMetadata);
+			String jsonObject = gson.toJson(exerciseMetadata);
 			BufferedWriter br = new BufferedWriter(new FileWriter(file));
 			br.write(jsonObject);
 			br.flush();

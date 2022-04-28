@@ -13,8 +13,10 @@ public class SolutionMetadata {
     String id;
     String pathname; 
     String lang;
+    String exerciseId;
 
     public SolutionMetadata(Exercise exercise){
+        this.exerciseId = exercise.getAkId();
         this.id = UUID.randomUUID().toString();
         this.lang  = exercise.getExercise_language();
         this.pathname = "solution." + exercise.getExercise_language().toLowerCase();             

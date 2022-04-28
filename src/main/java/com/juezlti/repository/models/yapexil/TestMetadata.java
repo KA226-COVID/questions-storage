@@ -26,10 +26,11 @@ public class TestMetadata {
     String inputValue;
     String outputValue;
     Object feedback;
-    private String akId;
+    private String exerciseId;
 
     public TestMetadata(Exercise exercise){
         this.id = UUID.randomUUID().toString();
+        this.exerciseId = exercise.getAkId();
         this.weight = 0;
         this.visible = true;
         this.input = "input.txt";
@@ -41,7 +42,7 @@ public class TestMetadata {
     public String calcInputValue(String base) {
         return Paths.get(
                 base,
-                this.getAkId(),
+                this.getExerciseId(),
                 TESTS_FOLDER,
                 id,
                 this.getInput()
@@ -51,7 +52,7 @@ public class TestMetadata {
     public String calcOutputValue(String base) {
         return Paths.get(
                 base,
-                this.getAkId(),
+                this.getExerciseId(),
                 TESTS_FOLDER,
                 id,
                 this.getOutput()

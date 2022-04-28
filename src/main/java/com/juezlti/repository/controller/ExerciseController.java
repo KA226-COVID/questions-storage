@@ -77,9 +77,8 @@ public class ExerciseController {
 
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 		List<Exercise> exercises = new ArrayList<>();
-		Exercise createdExercise = new Exercise();
+		System.out.println("Received JSON: "+exerciseJson);
 		String jsonResponse="";
-		String jsonObject = null;
 		JSONObject jsonResult = null;
 
 		try {
@@ -87,8 +86,8 @@ public class ExerciseController {
 			});
 			for (Exercise receivedExercise : exercises) {
 				try {
-
-					jsonResult = fileService.generateMetadatas(receivedExercise,jsonObject,createdExercise);											
+					
+					jsonResult = fileService.generateMetadatas(receivedExercise);											
 
 				} catch (Exception ex) {
 					log.error("Unexpected error trying to create exercise {}", ex);
