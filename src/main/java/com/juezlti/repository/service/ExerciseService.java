@@ -31,10 +31,11 @@ public class ExerciseService {
 
     @Value("${files-storage.exercises:/exercises}")
     private String exercisesStrPath;
-    
+
     public static final String SOLUTIONS_FOLDER  = "solutions";
     public static final String STATEMENTS_FOLDER = "statements";
     public static final String TESTS_FOLDER      = "tests";
+    public static final String LIBRARIES_FOLDER  = "libraries";
 
     public List<String> getExerciseFiles(String id, String folder){
         Path root = Paths.get(baseUploadStrPath, exercisesStrPath, id, folder);
@@ -58,8 +59,11 @@ public class ExerciseService {
                                 case SOLUTIONS_FOLDER:
                                     methodName = "getAuthorkitExerciseSolution";
                                     break;
+                                case LIBRARIES_FOLDER:
+                                    methodName = "getAuthorkitExerciseLibraries";
+                                    break;
                             }
-                            
+
                             String filePath = el.getParent().getFileName().toString();
                             String filenameEncoded = URLEncoder.encode(el.getFileName().toString(), StandardCharsets.UTF_8.toString());
                             String value = MvcUriComponentsBuilder
@@ -84,8 +88,8 @@ public class ExerciseService {
             return null;
         }
     }
-    
-    
+
+
     public List<String> getExerciseStatements(String id){
         return getExerciseFiles(id, STATEMENTS_FOLDER);
     }
@@ -97,5 +101,9 @@ public class ExerciseService {
     public List<String> getExerciseSolutions(String id){
         return getExerciseFiles(id, SOLUTIONS_FOLDER);
     }
-    
+
+    public List<String> getExerciseLibraries(String id){
+        return getExerciseFiles(id, LIBRARIES_FOLDER);
+    }
+
 }

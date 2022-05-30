@@ -50,31 +50,30 @@ public class ExerciseController {
 
 	@Value("${files-storage.upload:/upload}")
 	private String uploadPath;
-	
+
 	@Value("${files-storage.exercises:/exercises}")
 	private String exercisesPath;
-	
+
 	@Autowired
     private ExerciseRepository exerciseRepository;
-	
+
 	@Autowired
 	private FileService fileService;
-	
+
 	@Autowired
 	private HtmlFilter htmlFilterFactory;
-	
+
 	@Autowired
 	private ExerciseService exerciseService;
-	
+
 	public enum ExerciseData {
 		STATEMENT,
 		TEST,
-		SOLUTION
+		SOLUTION,
+		LIBRARIES
 	}
-
 	@PostMapping(path = "/createExercise")
-	public String createExercises(@RequestBody String exerciseJson) {
-
+	public String createExercises(@RequestParam(name = "json") String exerciseJson, @RequestParam(name = "file_field", required = false) List<MultipartFile> files) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 		List<Exercise> exercises = new ArrayList<>();
 		System.out.println("Received JSON: "+exerciseJson);
@@ -86,8 +85,10 @@ public class ExerciseController {
 			});
 			for (Exercise receivedExercise : exercises) {
 				try {
-					
-					jsonResult = fileService.generateMetadatas(receivedExercise);											
+					if(files != null && files.size() > 0) {
+						receivedExercise.setExercise_libraries(files);
+					}
+					jsonResult = fileService.generateMetadatas(receivedExercise);
 
 				} catch (Exception ex) {
 					log.error("Unexpected error trying to create exercise {}", ex);
@@ -103,7 +104,7 @@ public class ExerciseController {
 		}
 		return jsonResponse;
 	}
-	
+
 	@PostMapping("import-file")
 	public ResponseEntity<String> uploadFile(
 			@RequestParam("exercise") MultipartFile file,
@@ -116,7 +117,7 @@ public class ExerciseController {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 						.build();
 			}
-			
+
 			Path savedPath = fileService.save(file, uploadPath);
 			String akId = file.getOriginalFilename().replace(".zip", "");
 
@@ -133,12 +134,12 @@ public class ExerciseController {
 			if(repositoryExercise.isPresent()){
 
 				exerciseRepository.deleteById(repositoryExercise.get().getId());
-				
+
 			}
 
 			savedExercise = createRepositoryExercise(akId, sessionLanguage);
 			return ResponseEntity.status(HttpStatus.OK).body(savedExercise.getId());
-						
+
 		} catch (Exception e) {
 			System.out.println("FAILED");
 			System.out.println(e.getMessage());
@@ -224,6 +225,13 @@ public class ExerciseController {
 		return getExerciseData(id, ExerciseData.SOLUTION, request);
 	}
 
+	@GetMapping("external/{id}/libraries/**")
+	public ResponseEntity<Resource> getAuthorkitExerciseLibraries(
+			@PathVariable String id, HttpServletRequest request
+	){
+		return getExerciseData(id, ExerciseData.LIBRARIES, request);
+	}
+
 	private ResponseEntity<Resource> getExerciseData(String id, ExerciseData exData, HttpServletRequest request) {
 		String filenameParsed = extractPath(request, true);
 		String pathParsed = extractPath(request, false);
@@ -238,6 +246,9 @@ public class ExerciseController {
 				break;
 			case SOLUTION:
 				fileResource = fileService.loadExerciseSolutions(id, pathParsed);
+				break;
+			case LIBRARIES:
+				fileResource = fileService.loadExerciseLibraries(id, pathParsed);
 				break;
 		}
 
@@ -280,7 +291,7 @@ public class ExerciseController {
 		}
 		return filenameParsed;
 	}
-	
+
 	public MediaType getMimeType(Resource resource){
 		String mimeType = null;
 		try {
@@ -289,7 +300,7 @@ public class ExerciseController {
 			e.printStackTrace();
 			return null;
 		}
-		
+
 		return MediaType.valueOf(
 				Optional.ofNullable(mimeType).orElse("text/plain")
 		);
@@ -300,10 +311,10 @@ public class ExerciseController {
 		List<String> exercisesIdArr = Arrays.asList(exerciseIds.split(","));
 		return exerciseRepository.findByIdIn(exercisesIdArr);
 	}
-	
+
 	@GetMapping(path = "/getAllExercises/{value}")
 	public List<List> getAllExercisesPaged(@PathVariable("value") Integer page) {
-		
+
 		double total = Math.ceil((double)exerciseRepository.findAllExercises()/10);
 		List<List> listas = new ArrayList<List>();
 		List<Double> total1 = new ArrayList<Double>();
@@ -314,17 +325,17 @@ public class ExerciseController {
 
 		return listas;
 	}
-	
+
 	@GetMapping(path = "/getKeywords/{value}")
 	public List<Exercise> getKeywords(@PathVariable("value") String keywords) {
-	
+
 		List<String> list = new ArrayList<String>();
 		list.add(keywords);
 		List<Exercise> exercises = exerciseRepository.findByKeywords(list);
 
 		return exercises;
 	}
-	
+
 	@GetMapping(path = "/getTestExerciseBy4Values/{value}")
 	public List<List> findByExercises4Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
@@ -337,7 +348,7 @@ public class ExerciseController {
 		double total;
 		List<List> listas = new ArrayList<List>();
 		List<Double> total1 = new ArrayList<Double>();
-		
+
 		if(parameter4.equals("averageGrade") ) {
 			String list4 = value.get(7).get(0);
 			total = Math.ceil((double)exerciseRepository.findByExercises4ValuesCount(parameter, list, parameter2, list2, parameter3, list3, parameter4, list4)/10);
@@ -354,8 +365,8 @@ public class ExerciseController {
 		listas.add(total1);
 		return listas;
 	}
-	
-	
+
+
 	@GetMapping(path = "/getTestExerciseBy3Values/{value}")
 	public List<List> findByExercises3Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
@@ -366,7 +377,7 @@ public class ExerciseController {
 		double total;
 		List<List> listas = new ArrayList<List>();
 		List<Double> total1 = new ArrayList<Double>();
-		
+
 		if(parameter3.equals("averageGrade") ) {
 			String list3 = value.get(5).get(0);
 			total = Math.ceil((double)exerciseRepository.findByExercises3ValuesCount(parameter, list, parameter2, list2, parameter3, list3)/10);
@@ -383,8 +394,8 @@ public class ExerciseController {
 		listas.add(total1);
 		return listas;
 	}
-	
-	
+
+
 	@GetMapping(path = "/getTestExerciseByValues/{value}")
 	public List<List> findByExercises2Values1(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		String parameter = value.get(0).get(0);
@@ -393,7 +404,7 @@ public class ExerciseController {
 		double total;
 		List<List> listas = new ArrayList<List>();
 		List<Double> total1 = new ArrayList<Double>();
-		
+
 		if(parameter2.equals("averageGrade") ) {
 			String list2 = value.get(3).get(0);
 			total = Math.ceil((double)exerciseRepository.findByExercises2ValuesCount(parameter, list, parameter2, list2)/10);
@@ -417,15 +428,15 @@ public class ExerciseController {
 		}
 		return str.substring(0, 1).toUpperCase() + str.substring(1);
 	}
-	
-	
+
+
 	@GetMapping(path = "/getTestByValue/{value}")
 	public List<List> getTestByValue(@RequestBody List<List<String>> value, @PathVariable("value") int page) {
 		boolean score=false;
 		double total;
 		List<List> listas = new ArrayList<List>();
 		List<Double> total1 = new ArrayList<Double>();
-		
+
 		for (List<String> list : value) {
 			if(list.contains("averageGrade")) {
 				score=true;
@@ -445,7 +456,7 @@ public class ExerciseController {
 		List<Exercise> tests = exerciseRepository.QueryFindByValue( type, list, PageRequest.of(page, 10));
 		listas.add(tests);
 	}
-	
+
 	listas.add(total1);
 	return listas;
 	}
@@ -458,7 +469,7 @@ public class ExerciseController {
 		try {
 			statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
 			StatementMetadata firstStatement = statementsMetadata
-									.stream()									
+									.stream()
 									.filter(el -> sessionLanguage.equals(el.getNat_lang()))
 									.findFirst()
 									.get();
@@ -470,7 +481,7 @@ public class ExerciseController {
 			}
 			statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
 			StatementMetadata firstStatement = statementsMetadata
-								.stream()																		
+								.stream()
 								.findFirst()
 								.get();
 			return firstStatement;
@@ -491,8 +502,8 @@ public class ExerciseController {
 						.stream()
 						.findFirst()
 						.get();
-			
-				StatementMetadata firstStatement = searchFirstStatement(sessionLanguage,statementsMetadata,akId);									
+
+				StatementMetadata firstStatement = searchFirstStatement(sessionLanguage,statementsMetadata,akId);
 
 				akExercise.setTitle(exMetadata.getTitle());
 				switch (firstStatement.getFormat().toLowerCase()){

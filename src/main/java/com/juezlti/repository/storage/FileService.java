@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -36,6 +37,7 @@ import com.juezlti.repository.models.yapexil.ExerciseMetadata;
 import com.juezlti.repository.models.yapexil.SolutionMetadata;
 import com.juezlti.repository.models.yapexil.StatementMetadata;
 import com.juezlti.repository.models.yapexil.TestMetadata;
+import com.juezlti.repository.models.yapexil.LibraryMetadata;
 import com.juezlti.repository.repository.ExerciseRepository;
 
 import org.json.JSONObject;
@@ -51,289 +53,292 @@ import static com.juezlti.repository.service.ExerciseService.*;
 @Service
 public class FileService {
 
-    @Value("${files-storage.basepath:/codetest}")
-    private String baseUploadStrPath;
+		@Value("${files-storage.basepath:/codetest}")
+		private String baseUploadStrPath;
 
-    @Value("${files-storage.upload:/upload}")
-    private String uploadStrPath;
+		@Value("${files-storage.upload:/upload}")
+		private String uploadStrPath;
 
-    @Value("${files-storage.exercises:/exercises}")
-    private String exercisesStrPath;
-    
-    @Autowired
-    private ExerciseRepository exerciseRepository;
+		@Value("${files-storage.exercises:/exercises}")
+		private String exercisesStrPath;
+		
+		@Autowired
+		private ExerciseRepository exerciseRepository;
 
-    @PostConstruct
-    public void init() {
-        try {
-            Files.createDirectories(Paths.get(baseUploadStrPath));
-            Files.createDirectories(Paths.get(baseUploadStrPath, uploadStrPath));
-            Files.createDirectories(Paths.get(baseUploadStrPath, exercisesStrPath));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not create upload folder!");
-        }
-    }
+		@PostConstruct
+		public void init() {
+				try {
+						Files.createDirectories(Paths.get(baseUploadStrPath));
+						Files.createDirectories(Paths.get(baseUploadStrPath, uploadStrPath));
+						Files.createDirectories(Paths.get(baseUploadStrPath, exercisesStrPath));
+				} catch (IOException e) {
+						throw new RuntimeException("Could not create upload folder!");
+				}
+		}
 
-    public String getBaseUploadStrPath() {
-        return baseUploadStrPath;
-    }
+		public String getBaseUploadStrPath() {
+				return baseUploadStrPath;
+		}
 
-    public String getUploadStrPath() {
-        return uploadStrPath;
-    }
+		public String getUploadStrPath() {
+				return uploadStrPath;
+		}
 
-    public String getExercisesStrPath() {
-        return exercisesStrPath;
-    }
+		public String getExercisesStrPath() {
+				return exercisesStrPath;
+		}
 
-    public Path save(MultipartFile file, String... strPath) {
-        try {
-            Path root = Optional.ofNullable(strPath.length == 0 ? null : strPath[0])
-                            .map(argPath -> Paths.get(baseUploadStrPath, argPath))
-                            .orElse(Paths.get(baseUploadStrPath));
-            
-            if (!Files.exists(root)) {
-                Files.createDirectories(root);
-            }
+		public Path save(MultipartFile file, String... strPath) {
+				try {
+						Path root = Optional.ofNullable(strPath.length == 0 ? null : strPath[0])
+														.map(argPath -> Paths.get(baseUploadStrPath, argPath))
+														.orElse(Paths.get(baseUploadStrPath));
+						
+						if (!Files.exists(root)) {
+								Files.createDirectories(root);
+						}
 
-            Path destiny = root.resolve(file.getOriginalFilename());
-            CopyOption[] options = { StandardCopyOption.REPLACE_EXISTING };
-            Files.copy(file.getInputStream(), destiny, options);
+						Path destiny = root.resolve(file.getOriginalFilename());
+						CopyOption[] options = { StandardCopyOption.REPLACE_EXISTING };
+						Files.copy(file.getInputStream(), destiny, options);
 
-            return destiny;
-        } catch (Exception e) {
-            throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
-        }
-    }
+						return destiny;
+				} catch (Exception e) {
+						throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
+				}
+		}
 
-    public Resource load(String filename) {
-        try {
-            Path file = Paths.get(baseUploadStrPath, uploadStrPath)
-                    .resolve(filename);
-            Resource resource = new UrlResource(file.toUri());
+		public Resource load(String filename) {
+				try {
+						Path file = Paths.get(baseUploadStrPath, uploadStrPath)
+										.resolve(filename);
+						Resource resource = new UrlResource(file.toUri());
 
-            if (resource.exists() || resource.isReadable()) {
-                return resource;
-            } else {
-                throw new RuntimeException("Could not read the file!");
-            }
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Error: " + e.getMessage());
-        }
-    }
+						if (resource.exists() || resource.isReadable()) {
+								return resource;
+						} else {
+								throw new RuntimeException("Could not read the file!");
+						}
+				} catch (MalformedURLException e) {
+						throw new RuntimeException("Error: " + e.getMessage());
+				}
+		}
 
-    public Resource loadExerciseStatement(String id, String filename) {
-        return getResource(id, filename, STATEMENTS_FOLDER);
-    }
-    public Resource loadExerciseTests(String id, String filename) {
-        return getResource(id, filename, TESTS_FOLDER);
-    }
-    public Resource loadExerciseSolutions(String id, String filename) {
-        return getResource(id, filename, SOLUTIONS_FOLDER);
-    }
+		public Resource loadExerciseStatement(String id, String filename) {
+				return getResource(id, filename, STATEMENTS_FOLDER);
+		}
+		public Resource loadExerciseTests(String id, String filename) {
+				return getResource(id, filename, TESTS_FOLDER);
+		}
+		public Resource loadExerciseSolutions(String id, String filename) {
+				return getResource(id, filename, SOLUTIONS_FOLDER);
+		}
+		public Resource loadExerciseLibraries(String id, String filename) {
+				return getResource(id, filename, LIBRARIES_FOLDER);
+		}
 
-    public List<Path> getExerciseMetadataFiles(String id, boolean onlyFirstLevel) {
-        Path exFolderPath = Paths.get(baseUploadStrPath, exercisesStrPath, id);
-        int maxDepth = onlyFirstLevel ? 1 : 3;
-        try {
-            return Files
-                    .walk(exFolderPath, maxDepth)
-                    .filter(el -> !el.toFile().isDirectory() && "metadata.json".equals(el.getFileName().toString()))
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
-    }
+		public List<Path> getExerciseMetadataFiles(String id, boolean onlyFirstLevel) {
+				Path exFolderPath = Paths.get(baseUploadStrPath, exercisesStrPath, id);
+				int maxDepth = onlyFirstLevel ? 1 : 3;
+				try {
+						return Files
+										.walk(exFolderPath, maxDepth)
+										.filter(el -> !el.toFile().isDirectory() && "metadata.json".equals(el.getFileName().toString()))
+										.collect(Collectors.toList());
+				} catch (IOException e) {
+						e.printStackTrace();
+						return new ArrayList<>();
+				}
+		}
 
-    public ExerciseMetadata getExerciseMetadata(String id){
-        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        Optional<Path> path = getExerciseMetadataFiles(id, true).stream().findFirst();
-        try {
-            return objectMapper.readValue(
-                    readFileContentAsString(path.get()),
-                    new TypeReference<ExerciseMetadata>() {}
-            );
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+		public ExerciseMetadata getExerciseMetadata(String id){
+				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+				Optional<Path> path = getExerciseMetadataFiles(id, true).stream().findFirst();
+				try {
+						return objectMapper.readValue(
+										readFileContentAsString(path.get()),
+										new TypeReference<ExerciseMetadata>() {}
+						);
+				} catch (JsonProcessingException e) {
+						e.printStackTrace();
+						return null;
+				}
+		}
 
-    public List<StatementMetadata> getExerciseStatementsMetadata(String exId) {
-        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return getExerciseMetadataFiles(exId, false)
-                .stream()
-                .filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
-                .map(el -> {
-                            try {
-                                
-                                StatementMetadata aux = objectMapper.readValue(
-                                        readFileContentAsString(el),
-                                        new TypeReference<StatementMetadata>() {}
-                                );
-                                aux.setExerciseId(exId);
-                                return aux;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                return null;
-                            }
-                        }
-                )
-                .collect(Collectors.toList());
-    }
+		public List<StatementMetadata> getExerciseStatementsMetadata(String exId) {
+				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+				return getExerciseMetadataFiles(exId, false)
+								.stream()
+								.filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+								.map(el -> {
+														try {
+																
+																StatementMetadata aux = objectMapper.readValue(
+																				readFileContentAsString(el),
+																				new TypeReference<StatementMetadata>() {}
+																);
+																aux.setExerciseId(exId);
+																return aux;
+														} catch (IOException e) {
+																e.printStackTrace();
+																return null;
+														}
+												}
+								)
+								.collect(Collectors.toList());
+		}
 
-    public List<TestMetadata> getExerciseTestMetadata(String exId){
-        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
+		public List<TestMetadata> getExerciseTestMetadata(String exId){
+				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+				String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
 
-        
-        return getExerciseMetadataFiles(exId, false)
-                .stream()
-                .filter(el -> TESTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
-                .map(el -> {
-                            try {
-                                TestMetadata aux = objectMapper.readValue(
-                                        readFileContentAsString(el),
-                                        new TypeReference<TestMetadata>() {}
-                                );
-                                aux.setExerciseId(exId);                               
-                                aux.setInputValue(
-                                        readFileContentAsString(
-                                                Paths.get(aux.calcInputValue(base))
-                                        )
-                                );                              
-                                aux.setOutputValue(
-                                        readFileContentAsString(
-                                                Paths.get(aux.calcOutputValue(base))
-                                        )
-                                );                               
-                                return aux;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                return null;
-                            }
-                        }
-                )
-                .collect(Collectors.toList());
-    }
+				
+				return getExerciseMetadataFiles(exId, false)
+								.stream()
+								.filter(el -> TESTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+								.map(el -> {
+														try {
+																TestMetadata aux = objectMapper.readValue(
+																				readFileContentAsString(el),
+																				new TypeReference<TestMetadata>() {}
+																);
+																aux.setExerciseId(exId);
+																aux.setInputValue(
+																				readFileContentAsString(
+																								Paths.get(aux.calcInputValue(base))
+																				)
+																);
+																aux.setOutputValue(
+																				readFileContentAsString(
+																								Paths.get(aux.calcOutputValue(base))
+																				)
+																);
+																return aux;
+														} catch (IOException e) {
+																e.printStackTrace();
+																return null;
+														}
+												}
+								)
+								.collect(Collectors.toList());
+		}
 
-    public List<SolutionMetadata> getExerciseSolutionsMetadata(String exId) {
-        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return getExerciseMetadataFiles(exId, false)
-                .stream()
-                .filter(el -> SOLUTIONS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
-                .map(el -> {
-                            try {
-                                SolutionMetadata aux = objectMapper.readValue(
-                                        readFileContentAsString(el),
-                                        new TypeReference<SolutionMetadata>() {}
-                                );
-                                aux.setExerciseId(exId);
-                                return aux;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                return null;
-                            }
-                        }
-                )
-                .collect(Collectors.toList());
-    }
+		public List<SolutionMetadata> getExerciseSolutionsMetadata(String exId) {
+				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+				return getExerciseMetadataFiles(exId, false)
+								.stream()
+								.filter(el -> SOLUTIONS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+								.map(el -> {
+														try {
+																SolutionMetadata aux = objectMapper.readValue(
+																				readFileContentAsString(el),
+																				new TypeReference<SolutionMetadata>() {}
+																);
+																aux.setExerciseId(exId);
+																return aux;
+														} catch (IOException e) {
+																e.printStackTrace();
+																return null;
+														}
+												}
+								)
+								.collect(Collectors.toList());
+		}
 
-    private Resource getResource(String id, String filename, String folder) {
-        try {
-            Path file = Paths.get(baseUploadStrPath, exercisesStrPath, id, folder)
-                    .resolve(filename);
-            Resource resource = new UrlResource(file.toUri());
+		private Resource getResource(String id, String filename, String folder) {
+				try {
+						Path file = Paths.get(baseUploadStrPath, exercisesStrPath, id, folder)
+										.resolve(filename);
+						Resource resource = new UrlResource(file.toUri());
 
-            if (resource.exists() || resource.isReadable()) {
-                return resource;
-            } else {
-                throw new RuntimeException("Could not read the file!");
-            }
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Error: " + e.getMessage());
-        }
-    }
+						if (resource.exists() || resource.isReadable()) {
+								return resource;
+						} else {
+								throw new RuntimeException("Could not read the file!");
+						}
+				} catch (MalformedURLException e) {
+						throw new RuntimeException("Error: " + e.getMessage());
+				}
+		}
 
-    public String readFileContentAsString(Path filePath)
-    {
-        StringBuilder contentBuilder = new StringBuilder();
-        try (Stream<String> stream = Files.lines(filePath, StandardCharsets.UTF_8))
-        {   stream.forEach(s -> contentBuilder.append(s).append("\n")); }
+		public String readFileContentAsString(Path filePath)
+		{
+				StringBuilder contentBuilder = new StringBuilder();
+				try (Stream<String> stream = Files.lines(filePath, StandardCharsets.UTF_8))
+				{   stream.forEach(s -> contentBuilder.append(s).append("\n")); }
 		catch (IOException e)
-        {   e.printStackTrace();    }
-        return contentBuilder.toString();
-    }
+				{   e.printStackTrace();    }
+				return contentBuilder.toString();
+		}
 
-    public void deleteAll() {
-        FileSystemUtils.deleteRecursively(Paths.get(baseUploadStrPath)
-                .toFile());
-    }
+		public void deleteAll() {
+				FileSystemUtils.deleteRecursively(Paths.get(baseUploadStrPath)
+								.toFile());
+		}
 
-    public List<Path> loadAll() {
-        try {
-            Path root = Paths.get(baseUploadStrPath, uploadStrPath);
-            if (Files.exists(root)) {
-                return Files.walk(root, 1)
-                        .filter(path -> !path.equals(root) && !Files.isDirectory(path))
-                        .collect(Collectors.toList());
-            }
-            return Collections.emptyList();
-        } catch (IOException e) {
-            throw new RuntimeException("Could not list the files!");
-        }
-    }
+		public List<Path> loadAll() {
+				try {
+						Path root = Paths.get(baseUploadStrPath, uploadStrPath);
+						if (Files.exists(root)) {
+								return Files.walk(root, 1)
+												.filter(path -> !path.equals(root) && !Files.isDirectory(path))
+												.collect(Collectors.toList());
+						}
+						return Collections.emptyList();
+				} catch (IOException e) {
+						throw new RuntimeException("Could not list the files!");
+				}
+		}
 
-    public void addFolder(String route, String folder, ZipOutputStream zip)throws Exception{
+		public void addFolder(String route, String folder, ZipOutputStream zip)throws Exception{
 
-        File directory = new File(folder);        
-        for( String filename : directory.list()){
-            int vueltas = 0;
-            if(route.equals("")){
-                addFile(directory.getName(),folder + "/" + filename,zip,vueltas);
-                vueltas++;
-            }else{
-                addFile(route + "/" + directory.getName(),folder + "/" + filename,zip,vueltas);
-            }
-        }
+				File directory = new File(folder);        
+				for( String filename : directory.list()){
+						int vueltas = 0;
+						if(route.equals("")){
+								addFile(directory.getName(),folder + "/" + filename,zip,vueltas);
+								vueltas++;
+						}else{
+								addFile(route + "/" + directory.getName(),folder + "/" + filename,zip,vueltas);
+						}
+				}
 
-    }
+		}
 
-    public void addFile(String route, String directory, ZipOutputStream zip,int vueltas)throws Exception{
-        File file = new File(directory);
-        if(file.isDirectory()){
-            this.addFolder(route, directory, zip);
-        }else{
-            
-            byte[] buffer = new byte[1024];
-            FileInputStream inputStream = new FileInputStream(file);
-            int reader;
-            zip.putNextEntry(new ZipEntry("/" + file.getName()));
-            while(0 < (reader = inputStream.read(buffer))){
+		public void addFile(String route, String directory, ZipOutputStream zip,int vueltas)throws Exception{
+				File file = new File(directory);
+				if(file.isDirectory()){
+						this.addFolder(route, directory, zip);
+				}else{
+						
+						byte[] buffer = new byte[1024];
+						FileInputStream inputStream = new FileInputStream(file);
+						int reader;
+						zip.putNextEntry(new ZipEntry("/" + file.getName()));
+						while(0 < (reader = inputStream.read(buffer))){
 
-                zip.write(buffer,0,reader);
+								zip.write(buffer,0,reader);
 
-                }   
-            }
-    }
-    
-   
-    public void compress(String file, String zipFile)throws Exception{
+								}   
+						}
+		}
+		
+	 
+		public void compress(String file, String zipFile)throws Exception{
 
-        ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(zipFile));
-        addFolder("", file, zip);
-        zip.flush();
-        zip.close();
-    }
+				ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(zipFile));
+				addFolder("", file, zip);
+				zip.flush();
+				zip.close();
+		}
 
-    public JSONObject generateMetadatas(Exercise receivedExercise) throws Exception{
+		public JSONObject generateMetadatas(Exercise receivedExercise) throws Exception{
 
 		GsonBuilder builder = new GsonBuilder();
-		Gson gson = builder.create();
+		Gson gson = builder.excludeFieldsWithoutExposeAnnotation().create();
 		LocalDateTime actualDate = LocalDateTime.now();
 		JSONObject jsonResult = null;
-		receivedExercise.setCreated_at(actualDate);								
+		receivedExercise.setCreated_at(actualDate);
 		Exercise createdExercise = exerciseRepository.save(receivedExercise);
 		createdExercise.setAkId(UUID.randomUUID().toString());
 		exerciseRepository.save(createdExercise);
@@ -347,8 +352,6 @@ public class FileService {
 		this.getUploadStrPath() +
 		"/" +
 		createdExercise.getAkId();
-
-		
 
 		Path exerciseMainPath = Paths.get(exerciseDirectory);
 
@@ -383,9 +386,19 @@ public class FileService {
 			String fileTestDirectory = exerciseDirectory + "/" + TESTS_FOLDER;
 			String fileSolutionsDirectory = exerciseDirectory + "/" + SOLUTIONS_FOLDER;
 			String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
+						String fileLibrariesDirectory = "";
+
+						if(createdExercise.getExercise_libraries() != null){
+			    fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
+						}
+
 			Files.createDirectories(Paths.get(fileTestDirectory));
 			Files.createDirectories(Paths.get(fileSolutionsDirectory));
 			Files.createDirectories(Paths.get(fileStatementsDirectory));
+
+						if(createdExercise.getExercise_libraries() != null){
+			    Files.createDirectories(Paths.get(fileLibrariesDirectory));
+						}
 
 			////TEST
 			File testFile = new File(fileTestDirectory + "/" + testMetadata.getId() + "/" +"metadata.json");
@@ -400,8 +413,9 @@ public class FileService {
 				testFile.createNewFile();
 
 			}
-												
+
 			jsonObject = gson.toJson(testMetadata);
+
 			br = new BufferedWriter(new FileWriter(testFile));
 			br.write(jsonObject);
 			br.flush();
@@ -434,17 +448,18 @@ public class FileService {
 				statementFile.createNewFile();
 
 			}
-												
+
 			jsonObject = gson.toJson(statementMetadata);
+
 			br = new BufferedWriter(new FileWriter(statementFile));
 			br.write(jsonObject);
 			br.flush();
 			br.close();
-			
+
 			File statementLabel = new File(fileStatementsDirectory + "/" + statementMetadata.getStatementStringPath());					
 			if (!statementLabel.exists()) {
 
-				statementLabel.createNewFile();	
+				statementLabel.createNewFile();
 
 			}
 
@@ -467,8 +482,9 @@ public class FileService {
 				solutionFile.createNewFile();
 
 			}
-												
+
 			jsonObject = gson.toJson(solutionMetadata);
+
 			br = new BufferedWriter(new FileWriter(solutionFile));
 			br.write(jsonObject);
 			br.flush();
@@ -487,13 +503,50 @@ public class FileService {
 			br.flush();
 			br.close();	
 			// SOLUTION
+
+			// LIBRARIES
+						if(createdExercise.getExercise_libraries() != null){
+							for(MultipartFile library : createdExercise.getExercise_libraries()) {
+								LibraryMetadata libraryMetadata = new LibraryMetadata(createdExercise, library);
+
+										File librariesFile = new File(fileLibrariesDirectory + "/" + libraryMetadata.getId() + "/" +"metadata.json");
+
+										if (! librariesFile.getParentFile().exists()) {
+
+												librariesFile.getParentFile().mkdirs();
+
+										}
+										if (!librariesFile.exists()) {
+
+												librariesFile.createNewFile();
+
+										}
+
+										jsonObject = gson.toJson(libraryMetadata);
+
+										br = new BufferedWriter(new FileWriter(librariesFile));
+										br.write(jsonObject);
+										br.flush();
+										br.close();
+
+
+										MultipartFile multipartLibrary = libraryMetadata.getLibrary();
+										String libraryFileDirectory = fileLibrariesDirectory + "/" + libraryMetadata.getId() + "/";
+
+										Path filepathLibrary = Paths.get(libraryFileDirectory, libraryMetadata.getPathname());
+										try (OutputStream os = Files.newOutputStream(filepathLibrary)) {
+												os.write(multipartLibrary.getBytes());
+										}
+								}
+						}
+			// LIBRARIES
 			
 			//ZIP
 			String zipDestiny = uploadDirectory + ".zip";
 			String directoryToZip = exerciseDirectory;
 		      
 			zipFolder(new File(directoryToZip),
-                new File(zipDestiny));
+								new File(zipDestiny));
 			//ZIP
 
 			jsonResult = new JSONObject(createdExercise);
@@ -508,37 +561,37 @@ public class FileService {
 	}
 
 	public void zipFolder(File srcFolder, File destZipFile) throws Exception {
-        try (FileOutputStream fileWriter = new FileOutputStream(destZipFile);
-                ZipOutputStream zip = new ZipOutputStream(fileWriter)) {
+				try (FileOutputStream fileWriter = new FileOutputStream(destZipFile);
+								ZipOutputStream zip = new ZipOutputStream(fileWriter)) {
 
-            addFolderToZip(srcFolder, srcFolder, zip);
-        }
-    }
+						addFolderToZip(srcFolder, srcFolder, zip);
+				}
+		}
 
-    private void addFileToZip(File rootPath, File srcFile, ZipOutputStream zip) throws Exception {
+		private void addFileToZip(File rootPath, File srcFile, ZipOutputStream zip) throws Exception {
 
-        if (srcFile.isDirectory()) {
-            addFolderToZip(rootPath, srcFile, zip);
-        } else {
-            byte[] buf = new byte[1024];
-            int len;
-            try (FileInputStream in = new FileInputStream(srcFile)) {
-                String name = srcFile.getPath();
-                name = name.replace(rootPath.getPath(), "");
+				if (srcFile.isDirectory()) {
+						addFolderToZip(rootPath, srcFile, zip);
+				} else {
+						byte[] buf = new byte[1024];
+						int len;
+						try (FileInputStream in = new FileInputStream(srcFile)) {
+								String name = srcFile.getPath();
+								name = name.replace(rootPath.getPath(), "");
 				name = name.substring(1);
-                System.out.println("Zip " + srcFile + "\n to " + name);
-                zip.putNextEntry(new ZipEntry(name));
-                while ((len = in.read(buf)) > 0) {
-                    zip.write(buf, 0, len);
-                }
-            }
-        }
-    }
+								System.out.println("Zip " + srcFile + "\n to " + name);
+								zip.putNextEntry(new ZipEntry(name));
+								while ((len = in.read(buf)) > 0) {
+										zip.write(buf, 0, len);
+								}
+						}
+				}
+		}
 
-    private void addFolderToZip(File rootPath, File srcFolder, ZipOutputStream zip) throws Exception {
-        for (File fileName : srcFolder.listFiles()) {
-            addFileToZip(rootPath, fileName, zip);
-        }
-    }
+		private void addFolderToZip(File rootPath, File srcFolder, ZipOutputStream zip) throws Exception {
+				for (File fileName : srcFolder.listFiles()) {
+						addFileToZip(rootPath, fileName, zip);
+				}
+		}
 
 }

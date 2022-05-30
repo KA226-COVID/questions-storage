@@ -1,8 +1,8 @@
 package com.juezlti.repository.models.yapexil;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.juezlti.repository.models.Exercise;
 
+import com.google.gson.annotations.Expose;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,15 +17,25 @@ import static com.juezlti.repository.service.ExerciseService.TESTS_FOLDER;
 @Data
 @NoArgsConstructor
 public class TestMetadata {
+    @Expose(serialize = true)
     String id;    
+    @Expose(serialize = true)
     Number weight;
+    @Expose(serialize = true)
     Boolean visible;
+    @Expose(serialize = true)
     String input;
+    @Expose(serialize = true)
     String output;      
+    @Expose(serialize = true)
     List<String> arguments; 
+    @Expose(serialize = true)
     String inputValue;
+    @Expose(serialize = true)
     String outputValue;
+    @Expose(serialize = true)
     Object feedback;
+    @Expose(serialize = false)
     private String exerciseId;
 
     public TestMetadata(Exercise exercise){
