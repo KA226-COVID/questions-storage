@@ -3,6 +3,7 @@ package com.juezlti.repository.models;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -52,9 +53,9 @@ public class Exercise {
 
 	//Code
 	private String exercise_language;
-	private String exercise_input_test;
+	private Map<String, String> exercise_input_test;
 	private String exercise_input_grade;
-	private String exercise_output_test;
+	private Map<String, String> exercise_output_test;
 	private String exercise_output_grade;
 	private String recalculateOutputs;
 

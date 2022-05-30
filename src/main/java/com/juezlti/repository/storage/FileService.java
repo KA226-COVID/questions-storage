@@ -40,6 +40,8 @@ import com.juezlti.repository.models.yapexil.TestMetadata;
 import com.juezlti.repository.models.yapexil.LibraryMetadata;
 import com.juezlti.repository.repository.ExerciseRepository;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -375,7 +377,6 @@ public class FileService {
 			ExerciseMetadata exerciseMetadata = new ExerciseMetadata(createdExercise);
 			SolutionMetadata solutionMetadata = new SolutionMetadata(createdExercise);
 			StatementMetadata statementMetadata = new StatementMetadata(createdExercise);
-			TestMetadata testMetadata = new TestMetadata(createdExercise);
 
 			String jsonObject = gson.toJson(exerciseMetadata);
 			BufferedWriter br = new BufferedWriter(new FileWriter(file));
@@ -386,53 +387,57 @@ public class FileService {
 			String fileTestDirectory = exerciseDirectory + "/" + TESTS_FOLDER;
 			String fileSolutionsDirectory = exerciseDirectory + "/" + SOLUTIONS_FOLDER;
 			String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
-						String fileLibrariesDirectory = "";
+			String fileLibrariesDirectory = "";
 
-						if(createdExercise.getExercise_libraries() != null){
-			    fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
-						}
+			if(createdExercise.getExercise_libraries() != null){
+					fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
+			}
 
 			Files.createDirectories(Paths.get(fileTestDirectory));
 			Files.createDirectories(Paths.get(fileSolutionsDirectory));
 			Files.createDirectories(Paths.get(fileStatementsDirectory));
 
-						if(createdExercise.getExercise_libraries() != null){
-			    Files.createDirectories(Paths.get(fileLibrariesDirectory));
-						}
+			if(createdExercise.getExercise_libraries() != null){
+					Files.createDirectories(Paths.get(fileLibrariesDirectory));
+			}
 
 			////TEST
-			File testFile = new File(fileTestDirectory + "/" + testMetadata.getId() + "/" +"metadata.json");
+			createdExercise.getExercise_input_test().entrySet().forEach((entry) -> {
+					try {
+						if(!StringUtils.isEmpty(entry.getValue()) || !StringUtils.isEmpty(createdExercise.getExercise_output_test().get(entry.getKey()))) {
+							TestMetadata testMetadata = new TestMetadata(createdExercise);
+							File testFile = new File(fileTestDirectory + "/" + testMetadata.getId() + "/" +"metadata.json");
 
-			if (! testFile.getParentFile ().exists()) {
+							if (! testFile.getParentFile().exists()) {
+								testFile.getParentFile().mkdirs();
+							}
+							if (!testFile.exists()) {
+								testFile.createNewFile();
+							}
 
-				testFile.getParentFile().mkdirs();
+							String auxJsonObject = gson.toJson(testMetadata);
+							BufferedWriter auxbr = new BufferedWriter(new FileWriter(testFile));
+							auxbr.write(auxJsonObject);
+							auxbr.flush();
+							auxbr.close();
+							
+							String inputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/input.txt";
+							String outputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/output.txt";
 
-			}
-			if (!testFile.exists ()) {
+							auxbr = new BufferedWriter(new FileWriter(inputTestDirectory));
+							auxbr.write(entry.getValue());
+							auxbr.flush();
+							auxbr.close();
 
-				testFile.createNewFile();
-
-			}
-
-			jsonObject = gson.toJson(testMetadata);
-
-			br = new BufferedWriter(new FileWriter(testFile));
-			br.write(jsonObject);
-			br.flush();
-			br.close();
-			
-			String inputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/input.txt";
-			String outputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/output.txt";
-
-			br = new BufferedWriter(new FileWriter(inputTestDirectory));
-			br.write(createdExercise.getExercise_input_test());
-			br.flush();
-			br.close();
-
-			br = new BufferedWriter(new FileWriter(outputTestDirectory));
-			br.write(createdExercise.getExercise_output_test());
-			br.flush();
-			br.close();
+							auxbr = new BufferedWriter(new FileWriter(outputTestDirectory));
+							auxbr.write(createdExercise.getExercise_output_test().get(entry.getKey()));
+							auxbr.flush();
+							auxbr.close();
+						}
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
+			});
 			////TEST
 
 			////STATEMENT
