@@ -9,23 +9,16 @@ import org.json.JSONObject;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.google.gson.annotations.Expose;
-
 import com.juezlti.repository.models.Exercise;
 import static com.juezlti.repository.service.ExerciseService.LIBRARIES_FOLDER;
 
 @Data
 @NoArgsConstructor
 public class LibraryMetadata {
-    @Expose(serialize = true)
     String id;
-    @Expose(serialize = false)
     MultipartFile library;
-    @Expose(serialize = true)
     String pathname;
-    @Expose(serialize = true)
     String type;
-    @Expose(serialize = false)
     private String exerciseId;
 
     public LibraryMetadata(Exercise exercise, MultipartFile library){

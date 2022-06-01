@@ -1,7 +1,5 @@
 package com.juezlti.repository.models.yapexil;
 
-import com.google.gson.annotations.Expose;
-
 import com.juezlti.repository.models.Exercise;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,13 +10,9 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 public class SolutionMetadata {
-    @Expose(serialize = true)
     String id;
-    @Expose(serialize = true)
-    String pathname; 
-    @Expose(serialize = true)
+    String pathname;
     String lang;
-    @Expose(serialize = false)
     String exerciseId;
 
     public SolutionMetadata(Exercise exercise){
@@ -31,7 +25,7 @@ public class SolutionMetadata {
     public String getSolutionStringPath(){
         return this.getId() + "/" + this.getPathname();
     }
-    
+
     public Path getSolutionPath(){
         return Paths.get(this.getSolutionStringPath());
     }

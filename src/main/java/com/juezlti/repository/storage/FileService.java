@@ -42,6 +42,10 @@ import com.juezlti.repository.repository.ExerciseRepository;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.juezlti.repository.models.yapexil.exclusionStrategy.*;
+
+import com.google.gson.ExclusionStrategy;
+
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,7 +67,7 @@ public class FileService {
 
 		@Value("${files-storage.exercises:/exercises}")
 		private String exercisesStrPath;
-		
+
 		@Autowired
 		private ExerciseRepository exerciseRepository;
 
@@ -95,7 +99,7 @@ public class FileService {
 						Path root = Optional.ofNullable(strPath.length == 0 ? null : strPath[0])
 														.map(argPath -> Paths.get(baseUploadStrPath, argPath))
 														.orElse(Paths.get(baseUploadStrPath));
-						
+
 						if (!Files.exists(root)) {
 								Files.createDirectories(root);
 						}
@@ -174,7 +178,7 @@ public class FileService {
 								.filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
 								.map(el -> {
 														try {
-																
+
 																StatementMetadata aux = objectMapper.readValue(
 																				readFileContentAsString(el),
 																				new TypeReference<StatementMetadata>() {}
@@ -194,7 +198,7 @@ public class FileService {
 				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 				String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
 
-				
+
 				return getExerciseMetadataFiles(exId, false)
 								.stream()
 								.filter(el -> TESTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
@@ -294,7 +298,7 @@ public class FileService {
 
 		public void addFolder(String route, String folder, ZipOutputStream zip)throws Exception{
 
-				File directory = new File(folder);        
+				File directory = new File(folder);
 				for( String filename : directory.list()){
 						int vueltas = 0;
 						if(route.equals("")){
@@ -312,7 +316,7 @@ public class FileService {
 				if(file.isDirectory()){
 						this.addFolder(route, directory, zip);
 				}else{
-						
+
 						byte[] buffer = new byte[1024];
 						FileInputStream inputStream = new FileInputStream(file);
 						int reader;
@@ -321,11 +325,11 @@ public class FileService {
 
 								zip.write(buffer,0,reader);
 
-								}   
+								}
 						}
 		}
-		
-	 
+
+
 		public void compress(String file, String zipFile)throws Exception{
 
 				ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(zipFile));
@@ -335,9 +339,13 @@ public class FileService {
 		}
 
 		public JSONObject generateMetadatas(Exercise receivedExercise) throws Exception{
+		String[] fields = new String[2];
+		fields[0] = "exerciseId";
+		fields[1] = "library";
+		ExclusionStrategy excludeFields = new FieldsExclusionStrategy(fields);
 
 		GsonBuilder builder = new GsonBuilder();
-		Gson gson = builder.excludeFieldsWithoutExposeAnnotation().create();
+		Gson gson = builder.setExclusionStrategies(excludeFields).create();
 		LocalDateTime actualDate = LocalDateTime.now();
 		JSONObject jsonResult = null;
 		receivedExercise.setCreated_at(actualDate);
@@ -383,7 +391,7 @@ public class FileService {
 			br.write(jsonObject);
 			br.flush();
 			br.close();
-			
+
 			String fileTestDirectory = exerciseDirectory + "/" + TESTS_FOLDER;
 			String fileSolutionsDirectory = exerciseDirectory + "/" + SOLUTIONS_FOLDER;
 			String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
@@ -420,7 +428,7 @@ public class FileService {
 							auxbr.write(auxJsonObject);
 							auxbr.flush();
 							auxbr.close();
-							
+
 							String inputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/input.txt";
 							String outputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/output.txt";
 
@@ -461,7 +469,7 @@ public class FileService {
 			br.flush();
 			br.close();
 
-			File statementLabel = new File(fileStatementsDirectory + "/" + statementMetadata.getStatementStringPath());					
+			File statementLabel = new File(fileStatementsDirectory + "/" + statementMetadata.getStatementStringPath());
 			if (!statementLabel.exists()) {
 
 				statementLabel.createNewFile();
@@ -494,19 +502,19 @@ public class FileService {
 			br.write(jsonObject);
 			br.flush();
 			br.close();
-			
+
 			File solutionLabel = new File(fileSolutionsDirectory + "/" + solutionMetadata.getSolutionStringPath());
-			
+
 			if (!solutionLabel.exists ()) {
 
 				solutionLabel.createNewFile();
 
 			}
-						
+
 			br = new BufferedWriter(new FileWriter(solutionLabel));
 			br.write(createdExercise.getExercise_solution());
 			br.flush();
-			br.close();	
+			br.close();
 			// SOLUTION
 
 			// LIBRARIES
@@ -545,11 +553,11 @@ public class FileService {
 								}
 						}
 			// LIBRARIES
-			
+
 			//ZIP
 			String zipDestiny = uploadDirectory + ".zip";
 			String directoryToZip = exerciseDirectory;
-		      
+
 			zipFolder(new File(directoryToZip),
 								new File(zipDestiny));
 			//ZIP
@@ -559,7 +567,7 @@ public class FileService {
 			return jsonResult;
 
 		} else {
-			
+
 		System.out.println("Directory already exists");
 			return null;
 		}

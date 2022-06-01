@@ -6,23 +6,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
-import com.google.gson.annotations.Expose;
-
 import com.juezlti.repository.models.Exercise;
 import static com.juezlti.repository.service.ExerciseService.STATEMENTS_FOLDER;
 
 @Data
 @NoArgsConstructor
 public class StatementMetadata {
-    @Expose(serialize = true)
     String id;
-    @Expose(serialize = true)
     String pathname;
-    @Expose(serialize = true)
     String nat_lang;
-    @Expose(serialize = true)
     String format = "HTML";
-    @Expose(serialize = false)
     private String exerciseId;
 
     public StatementMetadata(Exercise exercise){
@@ -31,11 +24,11 @@ public class StatementMetadata {
         this.pathname = "statement." + this.format.toLowerCase();
         this.exerciseId = exercise.getAkId();
     }
-    
+
     public String getStatementStringPath(){
         return this.getId() + "/" + this.getPathname();
     }
-    
+
     public Path getStatementPath(){
         return Paths.get(this.getFileStringPath());
     }
@@ -43,7 +36,7 @@ public class StatementMetadata {
     public String getFileStringPath(){
         return this.getExerciseId() + "/" + STATEMENTS_FOLDER + "/" + this.getId() + "/" + this.getPathname();
     }
-    
+
     public Path getFilePath(){
         return Paths.get(this.getFileStringPath());
     }

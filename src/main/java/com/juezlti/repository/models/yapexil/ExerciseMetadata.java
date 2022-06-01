@@ -13,7 +13,7 @@ import com.juezlti.repository.models.Exercise;
 @NoArgsConstructor
 public class ExerciseMetadata {
     String id;
-    String title; 
+    String title;
     String module;
     String owner;
     String author;
@@ -42,7 +42,7 @@ public class ExerciseMetadata {
         this.keywords = exercise.getKeywords();
         this.event = (exercise.getEvent() == null)? "" : exercise.getEvent();
         this.platform = (exercise.getPlatform() == null)? "" : exercise.getPlatform();
-        this.timeout = (exercise.getTimeout() == null)? 0 : exercise.getTimeout();       
+        this.timeout = (exercise.getTimeout() == null)? 0 : exercise.getTimeout();
         this.created_at = exercise.getCreated_at().toString();
         this.updated_at = (exercise.getUpdated_at() == null)? exercise.getCreated_at().toString() : exercise.getUpdated_at().toString();
         this.author = exercise.getAuthor();
@@ -52,7 +52,7 @@ public class ExerciseMetadata {
             list.add(exercise.getExercise_language().toLowerCase());
             this.programmingLanguages = list;
         }else{
-            this.programmingLanguages = exercise.getProgrammingLanguages(); 
+            this.programmingLanguages = exercise.getProgrammingLanguages();
         }
 
     }
