@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -145,7 +146,7 @@ public class FileService {
 
 		public List<Path> getExerciseMetadataFiles(String id, boolean onlyFirstLevel) {
 				Path exFolderPath = Paths.get(baseUploadStrPath, exercisesStrPath, id);
-				int maxDepth = onlyFirstLevel ? 1 : 3;
+				int maxDepth = onlyFirstLevel ? 1 : 4;
 				try {
 						return Files
 										.walk(exFolderPath, maxDepth)
@@ -219,6 +220,30 @@ public class FileService {
 																								Paths.get(aux.calcOutputValue(base))
 																				)
 																);
+																return aux;
+														} catch (IOException e) {
+																e.printStackTrace();
+																return null;
+														}
+												}
+								)
+								.collect(Collectors.toList());
+		}
+
+		public List<LibraryMetadata> getExerciseLibrariesMetadata(String exId){
+				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+				String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
+
+				return getExerciseMetadataFiles(exId, false)
+								.stream()
+								.filter(el -> LIBRARIES_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+								.map(el -> {
+														try {
+																LibraryMetadata aux = objectMapper.readValue(
+																				readFileContentAsString(el),
+																				new TypeReference<LibraryMetadata>() {}
+																);
+																aux.setExerciseId(exId);
 																return aux;
 														} catch (IOException e) {
 																e.printStackTrace();
@@ -338,117 +363,46 @@ public class FileService {
 				zip.close();
 		}
 
-		public JSONObject generateMetadatas(Exercise receivedExercise) throws Exception{
-		String[] fields = new String[2];
-		fields[0] = "exerciseId";
-		fields[1] = "library";
-		ExclusionStrategy excludeFields = new FieldsExclusionStrategy(fields);
+		public void generateTestMetadatasFiles(Exercise exercise, String fileTestDirectory, Gson gson) throws Exception{
+			exercise.getExercise_input_test().entrySet().forEach((entry) -> {
+				try {
+					if(!StringUtils.isEmpty(entry.getValue()) || !StringUtils.isEmpty(exercise.getExercise_output_test().get(entry.getKey()))) {
+						TestMetadata testMetadata = new TestMetadata(exercise);
+						File testFile = new File(fileTestDirectory + "/" + testMetadata.getId() + "/" +"metadata.json");
 
-		GsonBuilder builder = new GsonBuilder();
-		Gson gson = builder.setExclusionStrategies(excludeFields).create();
-		LocalDateTime actualDate = LocalDateTime.now();
-		JSONObject jsonResult = null;
-		receivedExercise.setCreated_at(actualDate);
-		Exercise createdExercise = exerciseRepository.save(receivedExercise);
-		createdExercise.setAkId(UUID.randomUUID().toString());
-		exerciseRepository.save(createdExercise);
-
-		String exerciseDirectory = this.getBaseUploadStrPath() +
-		this.getExercisesStrPath() +
-		"/" +
-		createdExercise.getAkId();
-
-		String uploadDirectory = this.getBaseUploadStrPath() +
-		this.getUploadStrPath() +
-		"/" +
-		createdExercise.getAkId();
-
-		Path exerciseMainPath = Paths.get(exerciseDirectory);
-
-		if (!Files.exists(exerciseMainPath)) {
-
-			Files.createDirectory(exerciseMainPath);
-			File file = new File(exerciseDirectory + File.separator + "metadata.json");
-
-			if (!file.getParentFile().exists()) {
-
-				file.getParentFile().mkdirs();
-
-			}
-			if (file.exists ()) {
-
-				file.delete();
-
-			}
-
-			file.createNewFile();
-			ExerciseMetadata exerciseMetadata = new ExerciseMetadata(createdExercise);
-			SolutionMetadata solutionMetadata = new SolutionMetadata(createdExercise);
-			StatementMetadata statementMetadata = new StatementMetadata(createdExercise);
-
-			String jsonObject = gson.toJson(exerciseMetadata);
-			BufferedWriter br = new BufferedWriter(new FileWriter(file));
-			br.write(jsonObject);
-			br.flush();
-			br.close();
-
-			String fileTestDirectory = exerciseDirectory + "/" + TESTS_FOLDER;
-			String fileSolutionsDirectory = exerciseDirectory + "/" + SOLUTIONS_FOLDER;
-			String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
-			String fileLibrariesDirectory = "";
-
-			if(createdExercise.getExercise_libraries() != null){
-					fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
-			}
-
-			Files.createDirectories(Paths.get(fileTestDirectory));
-			Files.createDirectories(Paths.get(fileSolutionsDirectory));
-			Files.createDirectories(Paths.get(fileStatementsDirectory));
-
-			if(createdExercise.getExercise_libraries() != null){
-					Files.createDirectories(Paths.get(fileLibrariesDirectory));
-			}
-
-			////TEST
-			createdExercise.getExercise_input_test().entrySet().forEach((entry) -> {
-					try {
-						if(!StringUtils.isEmpty(entry.getValue()) || !StringUtils.isEmpty(createdExercise.getExercise_output_test().get(entry.getKey()))) {
-							TestMetadata testMetadata = new TestMetadata(createdExercise);
-							File testFile = new File(fileTestDirectory + "/" + testMetadata.getId() + "/" +"metadata.json");
-
-							if (! testFile.getParentFile().exists()) {
-								testFile.getParentFile().mkdirs();
-							}
-							if (!testFile.exists()) {
-								testFile.createNewFile();
-							}
-
-							String auxJsonObject = gson.toJson(testMetadata);
-							BufferedWriter auxbr = new BufferedWriter(new FileWriter(testFile));
-							auxbr.write(auxJsonObject);
-							auxbr.flush();
-							auxbr.close();
-
-							String inputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/input.txt";
-							String outputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/output.txt";
-
-							auxbr = new BufferedWriter(new FileWriter(inputTestDirectory));
-							auxbr.write(entry.getValue());
-							auxbr.flush();
-							auxbr.close();
-
-							auxbr = new BufferedWriter(new FileWriter(outputTestDirectory));
-							auxbr.write(createdExercise.getExercise_output_test().get(entry.getKey()));
-							auxbr.flush();
-							auxbr.close();
+						if (! testFile.getParentFile().exists()) {
+							testFile.getParentFile().mkdirs();
 						}
-					}catch(Exception e) {
-						e.printStackTrace();
-					}
-			});
-			////TEST
+						if (!testFile.exists()) {
+							testFile.createNewFile();
+						}
 
-			////STATEMENT
+						String auxJsonObject = gson.toJson(testMetadata);
+						BufferedWriter auxbr = new BufferedWriter(new FileWriter(testFile.getPath()));
+						auxbr.write(auxJsonObject);
+						auxbr.flush();
+						auxbr.close();
+
+						String inputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/input.txt";
+						String outputTestDirectory = fileTestDirectory + "/" + testMetadata.getId() + "/output.txt";
+
+						auxbr = new BufferedWriter(new FileWriter(inputTestDirectory));
+						auxbr.write(entry.getValue());
+						auxbr.flush();
+						auxbr.close();
+
+						auxbr = new BufferedWriter(new FileWriter(outputTestDirectory));
+						auxbr.write(exercise.getExercise_output_test().get(entry.getKey()));
+						auxbr.flush();
+						auxbr.close();
+					}
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+			});
+		}
+
+		public void generateStatementMetadataFile(Exercise exercise, String fileStatementsDirectory, StatementMetadata statementMetadata, Gson gson) throws Exception{
 			File statementFile = new File(fileStatementsDirectory + "/" + statementMetadata.getId() + "/" +"metadata.json");
 
 			if (! statementFile.getParentFile().exists()) {
@@ -462,9 +416,9 @@ public class FileService {
 
 			}
 
-			jsonObject = gson.toJson(statementMetadata);
+			String jsonObject = gson.toJson(statementMetadata);
 
-			br = new BufferedWriter(new FileWriter(statementFile));
+			BufferedWriter br = new BufferedWriter(new FileWriter(statementFile.getPath()));
 			br.write(jsonObject);
 			br.flush();
 			br.close();
@@ -477,28 +431,24 @@ public class FileService {
 			}
 
 			br = new BufferedWriter(new FileWriter(statementLabel));
-			br.write(createdExercise.getStatement());
+			br.write(exercise.getStatement());
 			br.flush();
 			br.close();
-			// STATEMENT
+		}
 
-			// SOLUTION
+		public void generateSolutionMetadataFile(Exercise exercise, String fileSolutionsDirectory, SolutionMetadata solutionMetadata, Gson gson) throws Exception{
 			File solutionFile = new File(fileSolutionsDirectory + "/" + solutionMetadata.getId() + "/" +"metadata.json");
 
 			if (! solutionFile.getParentFile ().exists()) {
-
 				solutionFile.getParentFile().mkdirs();
-
 			}
 			if (!solutionFile.exists ()) {
-
 				solutionFile.createNewFile();
-
 			}
 
-			jsonObject = gson.toJson(solutionMetadata);
+			String jsonObject = gson.toJson(solutionMetadata);
 
-			br = new BufferedWriter(new FileWriter(solutionFile));
+			BufferedWriter br = new BufferedWriter(new FileWriter(solutionFile.getPath()));
 			br.write(jsonObject);
 			br.flush();
 			br.close();
@@ -506,71 +456,334 @@ public class FileService {
 			File solutionLabel = new File(fileSolutionsDirectory + "/" + solutionMetadata.getSolutionStringPath());
 
 			if (!solutionLabel.exists ()) {
-
 				solutionLabel.createNewFile();
-
 			}
 
-			br = new BufferedWriter(new FileWriter(solutionLabel));
-			br.write(createdExercise.getExercise_solution());
+			br = new BufferedWriter(new FileWriter(solutionLabel.getPath()));
+			br.write(exercise.getExercise_solution());
 			br.flush();
 			br.close();
-			// SOLUTION
+		}
 
-			// LIBRARIES
-						if(createdExercise.getExercise_libraries() != null){
-							for(MultipartFile library : createdExercise.getExercise_libraries()) {
-								LibraryMetadata libraryMetadata = new LibraryMetadata(createdExercise, library);
+		public void generateLibraryMetadataFiles(Exercise exercise, String fileLibrariesDirectory, Gson gson) throws Exception{
+			for(MultipartFile library : exercise.getExercise_libraries()) {
+				LibraryMetadata libraryMetadata = new LibraryMetadata(exercise, library);
 
-										File librariesFile = new File(fileLibrariesDirectory + "/" + libraryMetadata.getId() + "/" +"metadata.json");
+				File librariesFile = new File(fileLibrariesDirectory + "/" + libraryMetadata.getId() + "/" +"metadata.json");
 
-										if (! librariesFile.getParentFile().exists()) {
+				if (! librariesFile.getParentFile().exists()) {
+					librariesFile.getParentFile().mkdirs();
 
-												librariesFile.getParentFile().mkdirs();
+				}
+				if (!librariesFile.exists()) {
+					librariesFile.createNewFile();
+				}
 
-										}
-										if (!librariesFile.exists()) {
+				String jsonObject = gson.toJson(libraryMetadata);
 
-												librariesFile.createNewFile();
+				BufferedWriter br = new BufferedWriter(new FileWriter(librariesFile.getPath()));
+				br.write(jsonObject);
+				br.flush();
+				br.close();
 
-										}
+				MultipartFile multipartLibrary = libraryMetadata.getLibrary();
+				String libraryFileDirectory = fileLibrariesDirectory + "/" + libraryMetadata.getId() + "/";
 
-										jsonObject = gson.toJson(libraryMetadata);
+				Path filepathLibrary = Paths.get(libraryFileDirectory, libraryMetadata.getPathname());
+				try (OutputStream os = Files.newOutputStream(filepathLibrary)) {
+					os.write(multipartLibrary.getBytes());
+				}
+			}
+		}
 
-										br = new BufferedWriter(new FileWriter(librariesFile));
-										br.write(jsonObject);
-										br.flush();
-										br.close();
+		public JSONObject generateMetadatas(Exercise receivedExercise, List<String> recuperatedLibraries, String exerciseReplace) throws Exception{
+			String[] fields = new String[2];
+			fields[0] = "exerciseId";
+			fields[1] = "library";
+			ExclusionStrategy excludeFields = new FieldsExclusionStrategy(fields);
 
+			GsonBuilder builder = new GsonBuilder();
+			Gson gson = builder.setExclusionStrategies(excludeFields).create();
+			LocalDateTime actualDate = LocalDateTime.now();
+			JSONObject jsonResult = null;
 
-										MultipartFile multipartLibrary = libraryMetadata.getLibrary();
-										String libraryFileDirectory = fileLibrariesDirectory + "/" + libraryMetadata.getId() + "/";
+			int separator = exerciseReplace.indexOf(":");
+			boolean isExerciseToReplace = Boolean.parseBoolean(exerciseReplace.substring(separator + 1));
 
-										Path filepathLibrary = Paths.get(libraryFileDirectory, libraryMetadata.getPathname());
-										try (OutputStream os = Files.newOutputStream(filepathLibrary)) {
-												os.write(multipartLibrary.getBytes());
-										}
-								}
+			if(isExerciseToReplace){
+				String exerciseAkId = exerciseReplace.substring(0, separator);
+
+				receivedExercise.setCreated_at(actualDate);
+				receivedExercise.setAkId(exerciseAkId);
+				Exercise exerciseToReplace = exerciseRepository.findByAkId(exerciseAkId);
+				receivedExercise.setId(exerciseToReplace.getId());
+
+				exerciseRepository.save(receivedExercise);
+
+				String exerciseDirectory = this.getBaseUploadStrPath() +
+				this.getExercisesStrPath() +
+				"/" +
+				receivedExercise.getAkId();
+				String uploadDirectory = this.getBaseUploadStrPath() +
+				this.getUploadStrPath() +
+				"/" +
+				receivedExercise.getAkId();
+
+				// File file = new File(exerciseDirectory + File.separator + "metadata.json");
+				Path filePath = Paths.get(exerciseDirectory, "metadata.json");
+
+				ExerciseMetadata exerciseMetadata = new ExerciseMetadata(receivedExercise);
+				SolutionMetadata solutionMetadata = new SolutionMetadata(receivedExercise);
+				StatementMetadata statementMetadata = new StatementMetadata(receivedExercise);
+
+				String jsonObject = gson.toJson(exerciseMetadata);
+				BufferedWriter br = new BufferedWriter(new FileWriter(filePath.toString()));
+				br.write(jsonObject);
+				br.flush();
+				br.close();
+
+				String fileTestDirectory = exerciseDirectory + "/" + TESTS_FOLDER;
+				String fileSolutionsDirectory = exerciseDirectory + "/" + SOLUTIONS_FOLDER;
+				String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
+				String fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
+
+				//TEST
+				List<TestMetadata> testMetadatas = getExerciseTestMetadata(exerciseAkId);
+				for (TestMetadata testMetadata : testMetadatas){
+					File f = new File(fileTestDirectory + "/" + testMetadata.getId());
+					deleteFolder(f);
+				}
+				generateTestMetadatasFiles(receivedExercise, fileTestDirectory, gson);
+
+				// TEST
+
+				// STATEMENT
+				List<StatementMetadata> statementMetadatasAux = getExerciseStatementsMetadata(exerciseAkId);
+				statementMetadata.setId(statementMetadatasAux.get(0).getId());
+
+				generateStatementMetadataFile(receivedExercise, fileStatementsDirectory, statementMetadata, gson);
+
+				// STATEMENT
+
+				// SOLUTION
+				List<SolutionMetadata> solutionMetadatasAux = getExerciseSolutionsMetadata(exerciseAkId);
+				solutionMetadata.setId(solutionMetadatasAux.get(0).getId());
+
+				generateSolutionMetadataFile(receivedExercise, fileSolutionsDirectory, solutionMetadata, gson);
+
+				// SOLUTION
+
+				// LIBRARIES
+				List<LibraryMetadata> oldLibraryMetadatas = getExerciseLibrariesMetadata(exerciseAkId);
+				List<String> libraryIds = new ArrayList<>();
+				if(receivedExercise.getExercise_libraries() != null){
+					generateLibraryMetadataFiles(receivedExercise, fileLibrariesDirectory, gson);
+				}
+				if (recuperatedLibraries.size() != 0){
+					for (int i = 0; i < recuperatedLibraries.size(); i++){
+						String recuperatedLibrary = recuperatedLibraries.get(i);
+						int separatorLoc = recuperatedLibrary.indexOf(":");
+						String libraryId = recuperatedLibrary.substring(separatorLoc + 1);
+						libraryIds.add(libraryId);
+						String exerciseId = recuperatedLibrary.substring(0, separatorLoc);
+
+						Path librariesFilePath = Paths.get(fileLibrariesDirectory + "/" + libraryId, "metadata.json");
+
+						List<LibraryMetadata> librariesMetadata = getExerciseLibrariesMetadata(exerciseId);
+						librariesMetadata.removeIf(lib -> !lib.getId().equals(libraryId));
+
+						String name = librariesMetadata.get(0).getPathname();
+						String libraryPath = this.getBaseUploadStrPath() + this.getExercisesStrPath() + "/" + librariesMetadata.get(0).getFileStringPath() + name;
+						byte[] content = Files.readAllBytes(Paths.get(libraryPath));
+
+						librariesMetadata.get(0).setExerciseId(receivedExercise.getId());
+
+						jsonObject = gson.toJson(librariesMetadata.get(0));
+
+						br = new BufferedWriter(new FileWriter(librariesFilePath.toString()));
+						br.write(jsonObject);
+						br.flush();
+						br.close();
+
+						String libraryFileDirectory = fileLibrariesDirectory + "/" + librariesMetadata.get(0).getId() + "/";
+						Path filepathLibrary = Paths.get(libraryFileDirectory, librariesMetadata.get(0).getPathname());
+						try (OutputStream os = Files.newOutputStream(filepathLibrary)) {
+							os.write(content);
 						}
-			// LIBRARIES
 
-			//ZIP
-			String zipDestiny = uploadDirectory + ".zip";
-			String directoryToZip = exerciseDirectory;
+					}
+				}
 
-			zipFolder(new File(directoryToZip),
-								new File(zipDestiny));
-			//ZIP
+				for (int index = 0; index < oldLibraryMetadatas.size(); index++){
+					if(libraryIds.size() == 0){
+						File f = new File(fileLibrariesDirectory);
+						deleteFolder(f);
+					}
+					if (!libraryIds.contains(oldLibraryMetadatas.get(index).getId())){
+						File f = new File(fileLibrariesDirectory + "/" + oldLibraryMetadatas.get(index).getId() + "/");
+						deleteFolder(f);
+					}
+				}
+				// LIBRARIES
 
-			jsonResult = new JSONObject(createdExercise);
+				//ZIP
+				String zipDestiny = uploadDirectory + ".zip";
+				String directoryToZip = exerciseDirectory;
+
+				zipFolder(new File(directoryToZip),
+									new File(zipDestiny));
+				//ZIP
+
+				jsonResult = new JSONObject(receivedExercise);
+			}else{
+				receivedExercise.setCreated_at(actualDate);
+				Exercise createdExercise = exerciseRepository.save(receivedExercise);
+				createdExercise.setAkId(UUID.randomUUID().toString());
+				exerciseRepository.save(createdExercise);
+				String exerciseDirectory = this.getBaseUploadStrPath() +
+				this.getExercisesStrPath() +
+				"/" +
+				createdExercise.getAkId();
+
+				String uploadDirectory = this.getBaseUploadStrPath() +
+				this.getUploadStrPath() +
+				"/" +
+				createdExercise.getAkId();
+
+				Path exerciseMainPath = Paths.get(exerciseDirectory);
+
+				if (!Files.exists(exerciseMainPath)) {
+
+					Files.createDirectory(exerciseMainPath);
+					File file = new File(exerciseDirectory + File.separator + "metadata.json");
+
+					if (!file.getParentFile().exists()) {
+
+						file.getParentFile().mkdirs();
+
+					}
+					if (file.exists ()) {
+						file.delete();
+					}
+
+					file.createNewFile();
+					ExerciseMetadata exerciseMetadata = new ExerciseMetadata(createdExercise);
+					SolutionMetadata solutionMetadata = new SolutionMetadata(createdExercise);
+					StatementMetadata statementMetadata = new StatementMetadata(createdExercise);
+
+					String jsonObject = gson.toJson(exerciseMetadata);
+					BufferedWriter br = new BufferedWriter(new FileWriter(file));
+					br.write(jsonObject);
+					br.flush();
+					br.close();
+
+					String fileTestDirectory = exerciseDirectory + "/" + TESTS_FOLDER;
+					String fileSolutionsDirectory = exerciseDirectory + "/" + SOLUTIONS_FOLDER;
+					String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
+					String fileLibrariesDirectory = "";
+
+					if(createdExercise.getExercise_libraries() != null || recuperatedLibraries.size() != 0){
+						fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
+						Files.createDirectories(Paths.get(fileLibrariesDirectory));
+					}
+
+					Files.createDirectories(Paths.get(fileTestDirectory));
+					Files.createDirectories(Paths.get(fileSolutionsDirectory));
+					Files.createDirectories(Paths.get(fileStatementsDirectory));
+
+					////TEST
+					generateTestMetadatasFiles(createdExercise, fileTestDirectory, gson);
+					////TEST
+
+					////STATEMENT
+					generateStatementMetadataFile(createdExercise, fileStatementsDirectory, statementMetadata, gson);
+					// STATEMENT
+
+					// SOLUTION
+					generateSolutionMetadataFile(createdExercise, fileSolutionsDirectory, solutionMetadata, gson);
+					// SOLUTION
+
+					// LIBRARIES
+					if(createdExercise.getExercise_libraries() != null){
+						generateLibraryMetadataFiles(createdExercise, fileLibrariesDirectory, gson);
+					}
+					if (recuperatedLibraries.size() != 0){
+						for (int i = 0; i < recuperatedLibraries.size(); i++){
+							String recuperatedLibrary = recuperatedLibraries.get(i);
+							int separatorLoc = recuperatedLibrary.indexOf(":");
+							String libraryId = recuperatedLibrary.substring(separatorLoc + 1);
+							String exerciseId = recuperatedLibrary.substring(0, separatorLoc);
+
+							File librariesFile = new File(fileLibrariesDirectory + "/" + libraryId + "/" +"metadata.json");
+
+							if (!librariesFile.getParentFile().exists()) {
+								librariesFile.getParentFile().mkdirs();
+							}
+							if (!librariesFile.exists()) {
+								librariesFile.createNewFile();
+							}
+							List<LibraryMetadata> librariesMetadata = getExerciseLibrariesMetadata(exerciseId);
+							librariesMetadata.removeIf(lib -> !lib.getId().equals(libraryId));
+
+							String name = librariesMetadata.get(0).getPathname();
+							String libraryPath = this.getBaseUploadStrPath() + this.getExercisesStrPath() + "/" + librariesMetadata.get(0).getFileStringPath() + name;
+							byte[] content = Files.readAllBytes(Paths.get(libraryPath));
+
+							librariesMetadata.get(0).setExerciseId(receivedExercise.getId());
+
+							jsonObject = gson.toJson(librariesMetadata.get(0));
+
+							br = new BufferedWriter(new FileWriter(librariesFile));
+							br.write(jsonObject);
+							br.flush();
+							br.close();
+
+							String libraryFileDirectory = fileLibrariesDirectory + "/" + librariesMetadata.get(0).getId() + "/";
+							Path filepathLibrary = Paths.get(libraryFileDirectory, librariesMetadata.get(0).getPathname());
+							try (OutputStream os = Files.newOutputStream(filepathLibrary)) {
+								os.write(content);
+							}
+
+						}
+						// File librariesFile = new File(fileLibrariesDirectory + "/" + libraryMetadata.getId() + "/" +"metadata.json");
+					}
+					// LIBRARIES
+
+					//ZIP
+					String zipDestiny = uploadDirectory + ".zip";
+					String directoryToZip = exerciseDirectory;
+
+					zipFolder(new File(directoryToZip),
+										new File(zipDestiny));
+					//ZIP
+
+					jsonResult = new JSONObject(createdExercise);
+				}
+			}
 
 			return jsonResult;
 
-		} else {
+		/*} else {
 
-		System.out.println("Directory already exists");
+			System.out.println("Directory already exists");
 			return null;
+		}*/
+	}
+
+	public static void deleteFolder(File folder) {
+		File[] files = folder.listFiles();
+		if(files!=null) {
+			if(files!=null) {
+				for(File f: files) {
+					if(f.isDirectory()) {
+						deleteFolder(f);
+					} else {
+						f.delete();
+					}
+				}
+			}
 		}
+		folder.delete();
 	}
 
 	public void zipFolder(File srcFolder, File destZipFile) throws Exception {

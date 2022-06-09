@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.File;
+
 import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -14,6 +16,7 @@ import com.juezlti.repository.models.yapexil.ExerciseMetadata;
 import com.juezlti.repository.models.yapexil.SolutionMetadata;
 import com.juezlti.repository.models.yapexil.StatementMetadata;
 import com.juezlti.repository.models.yapexil.TestMetadata;
+import com.juezlti.repository.models.yapexil.LibraryMetadata;
 import com.juezlti.repository.storage.FileService;
 import com.juezlti.repository.util.HtmlFilter;
 import lombok.AllArgsConstructor;
@@ -72,13 +75,18 @@ public class ExerciseController {
 		SOLUTION,
 		LIBRARIES
 	}
+
 	@PostMapping(path = "/createExercise")
-	public String createExercises(@RequestParam(name = "json") String exerciseJson, @RequestParam(name = "file_field", required = false) List<MultipartFile> files) {
+	public String createExercises(@RequestParam(name = "json") String exerciseJson,
+								  @RequestParam(name = "file_field", required = false) List<MultipartFile> files,
+								  @RequestParam(name = "recuperated_libraries", required = false) String recuperatedLibraries,
+								  @RequestParam(name = "exercise_replace", required = false) String exerciseReplace) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 		List<Exercise> exercises = new ArrayList<>();
 		System.out.println("Received JSON: "+exerciseJson);
 		String jsonResponse="";
 		JSONObject jsonResult = null;
+		List<String> recLibraries = new ArrayList<>();
 
 		try {
 			exercises = objectMapper.readValue(exerciseJson, new TypeReference<List<Exercise>>() {
@@ -88,7 +96,10 @@ public class ExerciseController {
 					if(files != null && files.size() > 0) {
 						receivedExercise.setExercise_libraries(files);
 					}
-					jsonResult = fileService.generateMetadatas(receivedExercise);
+					if(recuperatedLibraries != null) { // The colon separator indicate that the first one is the exercise_id and the second one is the library_id (1212adsdad-asd:122saxcz)
+						recLibraries = objectMapper.readValue(recuperatedLibraries, new TypeReference<List<String>>(){});
+					}
+					jsonResult = fileService.generateMetadatas(receivedExercise, recLibraries, exerciseReplace);
 
 				} catch (Exception ex) {
 					log.error("Unexpected error trying to create exercise {}", ex);
@@ -192,6 +203,13 @@ public class ExerciseController {
 	){
 		return ResponseEntity.ok()
 				.body(fileService.getExerciseTestMetadata(id));
+	}
+
+	@GetMapping("{id}/libraries")
+	public ResponseEntity<List<LibraryMetadata>> getExerciseLibraries(
+			@PathVariable String id, HttpServletRequest request
+	){
+		return ResponseEntity.ok().body(fileService.getExerciseLibrariesMetadata(id));
 	}
 
 	@GetMapping("external/{id}")
