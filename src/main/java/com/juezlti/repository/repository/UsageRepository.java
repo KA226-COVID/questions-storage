@@ -15,6 +15,7 @@ public interface UsageRepository extends MongoRepository<Usage, String> {
 	  List<Usage> findByIdExerciseInAndUserIdInAndCtId(List<String> idExercises, List<String> idUser, String ctId);
 	 
 	  int countByCtId(String ctId);
+	  int countByIdExerciseIgnoreCase(String idExercise);
 	
 	  List<Usage> findByIdExerciseIgnoreCase(String idExercise); 
 	  List<Usage> findByDate(Date date); 

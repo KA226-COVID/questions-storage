@@ -496,7 +496,7 @@ public class FileService {
 			}
 		}
 
-		public JSONObject generateMetadatas(Exercise receivedExercise, List<String> recuperatedLibraries, String exerciseReplace) throws Exception{
+		public JSONObject generateMetadatas(Exercise receivedExercise, List<String> recuperatedLibraries, boolean updateExercise) throws Exception{
 			String[] fields = new String[2];
 			fields[0] = "exerciseId";
 			fields[1] = "library";
@@ -507,16 +507,10 @@ public class FileService {
 			LocalDateTime actualDate = LocalDateTime.now();
 			JSONObject jsonResult = null;
 
-			int separator = exerciseReplace.indexOf(":");
-			boolean isExerciseToReplace = Boolean.parseBoolean(exerciseReplace.substring(separator + 1));
-
-			if(isExerciseToReplace){
-				String exerciseAkId = exerciseReplace.substring(0, separator);
-
-				receivedExercise.setCreated_at(actualDate);
-				receivedExercise.setAkId(exerciseAkId);
-				Exercise exerciseToReplace = exerciseRepository.findByAkId(exerciseAkId);
-				receivedExercise.setId(exerciseToReplace.getId());
+			if(updateExercise){
+				Exercise exerciseToReplace = exerciseRepository.findById(receivedExercise.getId()).orElse(new Exercise());
+				receivedExercise.setCreated_at(exerciseToReplace.getCreated_at());
+				receivedExercise.setUpdated_at(actualDate);
 
 				exerciseRepository.save(receivedExercise);
 
@@ -548,7 +542,7 @@ public class FileService {
 				String fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
 
 				//TEST
-				List<TestMetadata> testMetadatas = getExerciseTestMetadata(exerciseAkId);
+				List<TestMetadata> testMetadatas = getExerciseTestMetadata(receivedExercise.getAkId());
 				for (TestMetadata testMetadata : testMetadatas){
 					File f = new File(fileTestDirectory + "/" + testMetadata.getId());
 					deleteFolder(f);
@@ -558,7 +552,7 @@ public class FileService {
 				// TEST
 
 				// STATEMENT
-				List<StatementMetadata> statementMetadatasAux = getExerciseStatementsMetadata(exerciseAkId);
+				List<StatementMetadata> statementMetadatasAux = getExerciseStatementsMetadata(receivedExercise.getAkId());
 				statementMetadata.setId(statementMetadatasAux.get(0).getId());
 
 				generateStatementMetadataFile(receivedExercise, fileStatementsDirectory, statementMetadata, gson);
@@ -566,7 +560,7 @@ public class FileService {
 				// STATEMENT
 
 				// SOLUTION
-				List<SolutionMetadata> solutionMetadatasAux = getExerciseSolutionsMetadata(exerciseAkId);
+				List<SolutionMetadata> solutionMetadatasAux = getExerciseSolutionsMetadata(receivedExercise.getAkId());
 				solutionMetadata.setId(solutionMetadatasAux.get(0).getId());
 
 				generateSolutionMetadataFile(receivedExercise, fileSolutionsDirectory, solutionMetadata, gson);
@@ -574,7 +568,7 @@ public class FileService {
 				// SOLUTION
 
 				// LIBRARIES
-				List<LibraryMetadata> oldLibraryMetadatas = getExerciseLibrariesMetadata(exerciseAkId);
+				List<LibraryMetadata> oldLibraryMetadatas = getExerciseLibrariesMetadata(receivedExercise.getAkId());
 				List<String> libraryIds = new ArrayList<>();
 				if(receivedExercise.getExercise_libraries() != null){
 					generateLibraryMetadataFiles(receivedExercise, fileLibrariesDirectory, gson);
@@ -636,19 +630,26 @@ public class FileService {
 
 				jsonResult = new JSONObject(receivedExercise);
 			}else{
+				if(!StringUtils.isEmpty(receivedExercise.getId())) {
+					receivedExercise.setId(null);
+				}
 				receivedExercise.setCreated_at(actualDate);
-				Exercise createdExercise = exerciseRepository.save(receivedExercise);
-				createdExercise.setAkId(UUID.randomUUID().toString());
-				exerciseRepository.save(createdExercise);
+				receivedExercise.setUpdated_at(actualDate);
+				do {
+					receivedExercise.setAkId(UUID.randomUUID().toString());
+				} while(Files.exists(Paths.get(this.getBaseUploadStrPath() + this.getExercisesStrPath() + "/" + receivedExercise.getAkId())));
+				
+				exerciseRepository.save(receivedExercise);
+				
 				String exerciseDirectory = this.getBaseUploadStrPath() +
 				this.getExercisesStrPath() +
 				"/" +
-				createdExercise.getAkId();
+				receivedExercise.getAkId();
 
 				String uploadDirectory = this.getBaseUploadStrPath() +
 				this.getUploadStrPath() +
 				"/" +
-				createdExercise.getAkId();
+				receivedExercise.getAkId();
 
 				Path exerciseMainPath = Paths.get(exerciseDirectory);
 
@@ -667,9 +668,9 @@ public class FileService {
 					}
 
 					file.createNewFile();
-					ExerciseMetadata exerciseMetadata = new ExerciseMetadata(createdExercise);
-					SolutionMetadata solutionMetadata = new SolutionMetadata(createdExercise);
-					StatementMetadata statementMetadata = new StatementMetadata(createdExercise);
+					ExerciseMetadata exerciseMetadata = new ExerciseMetadata(receivedExercise);
+					SolutionMetadata solutionMetadata = new SolutionMetadata(receivedExercise);
+					StatementMetadata statementMetadata = new StatementMetadata(receivedExercise);
 
 					String jsonObject = gson.toJson(exerciseMetadata);
 					BufferedWriter br = new BufferedWriter(new FileWriter(file));
@@ -682,7 +683,7 @@ public class FileService {
 					String fileStatementsDirectory = exerciseDirectory + "/" + STATEMENTS_FOLDER;
 					String fileLibrariesDirectory = "";
 
-					if(createdExercise.getExercise_libraries() != null || recuperatedLibraries.size() != 0){
+					if(receivedExercise.getExercise_libraries() != null || recuperatedLibraries.size() != 0){
 						fileLibrariesDirectory = exerciseDirectory + "/" + LIBRARIES_FOLDER;
 						Files.createDirectories(Paths.get(fileLibrariesDirectory));
 					}
@@ -692,20 +693,20 @@ public class FileService {
 					Files.createDirectories(Paths.get(fileStatementsDirectory));
 
 					////TEST
-					generateTestMetadatasFiles(createdExercise, fileTestDirectory, gson);
+					generateTestMetadatasFiles(receivedExercise, fileTestDirectory, gson);
 					////TEST
 
 					////STATEMENT
-					generateStatementMetadataFile(createdExercise, fileStatementsDirectory, statementMetadata, gson);
+					generateStatementMetadataFile(receivedExercise, fileStatementsDirectory, statementMetadata, gson);
 					// STATEMENT
 
 					// SOLUTION
-					generateSolutionMetadataFile(createdExercise, fileSolutionsDirectory, solutionMetadata, gson);
+					generateSolutionMetadataFile(receivedExercise, fileSolutionsDirectory, solutionMetadata, gson);
 					// SOLUTION
 
 					// LIBRARIES
-					if(createdExercise.getExercise_libraries() != null){
-						generateLibraryMetadataFiles(createdExercise, fileLibrariesDirectory, gson);
+					if(receivedExercise.getExercise_libraries() != null){
+						generateLibraryMetadataFiles(receivedExercise, fileLibrariesDirectory, gson);
 					}
 					if (recuperatedLibraries.size() != 0){
 						for (int i = 0; i < recuperatedLibraries.size(); i++){
@@ -757,7 +758,7 @@ public class FileService {
 										new File(zipDestiny));
 					//ZIP
 
-					jsonResult = new JSONObject(createdExercise);
+					jsonResult = new JSONObject(receivedExercise);
 				}
 			}
 
