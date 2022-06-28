@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import static com.juezlti.repository.service.ExerciseService.TESTS_FOLDER;
@@ -23,7 +24,7 @@ public class TestMetadata {
     List<String> arguments;
     String inputValue;
     String outputValue;
-    Object feedback;
+    List<String> feedback;
     private String exerciseId;
 
     public TestMetadata(Exercise exercise){
@@ -34,7 +35,7 @@ public class TestMetadata {
         this.input = "input.txt";
         this.output = "output.txt";
         this.arguments = exercise.getKeywords();
-        this.feedback = new Object();
+        this.feedback = new ArrayList<String>();
     }
 
     public String calcInputValue(String base) {
