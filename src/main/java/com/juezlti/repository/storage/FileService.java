@@ -173,107 +173,107 @@ public class FileService {
 		}
 
 		public List<StatementMetadata> getExerciseStatementsMetadata(String exId) {
-				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				return getExerciseMetadataFiles(exId, false)
-								.stream()
-								.filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
-								.map(el -> {
-														try {
+			ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			return getExerciseMetadataFiles(exId, false)
+				.stream()
+				.filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+				.map(el -> {
+						try {
 
-																StatementMetadata aux = objectMapper.readValue(
-																				readFileContentAsString(el),
-																				new TypeReference<StatementMetadata>() {}
-																);
-																aux.setExerciseId(exId);
-																return aux;
-														} catch (IOException e) {
-																e.printStackTrace();
-																return null;
-														}
-												}
-								)
-								.collect(Collectors.toList());
+							StatementMetadata aux = objectMapper.readValue(
+								readFileContentAsString(el),
+								new TypeReference<StatementMetadata>() {}
+							);
+							aux.setExerciseId(exId);
+							return aux;
+						} catch (IOException e) {
+							e.printStackTrace();
+							return null;
+						}
+					}
+				)
+				.collect(Collectors.toList());
 		}
 
 		public List<TestMetadata> getExerciseTestMetadata(String exId){
-				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
+			ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
 
 
-				return getExerciseMetadataFiles(exId, false)
-								.stream()
-								.filter(el -> TESTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
-								.map(el -> {
-														try {
-																TestMetadata aux = objectMapper.readValue(
-																				readFileContentAsString(el),
-																				new TypeReference<TestMetadata>() {}
-																);
-																aux.setExerciseId(exId);
-																aux.setInputValue(
-																				readFileContentAsString(
-																								Paths.get(aux.calcInputValue(base))
-																				)
-																);
-																aux.setOutputValue(
-																				readFileContentAsString(
-																								Paths.get(aux.calcOutputValue(base))
-																				)
-																);
-																return aux;
-														} catch (IOException e) {
-																e.printStackTrace();
-																return null;
-														}
-												}
+			return getExerciseMetadataFiles(exId, false)
+				.stream()
+				.filter(el -> TESTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+				.map(el -> {
+						try {
+							TestMetadata aux = objectMapper.readValue(
+								readFileContentAsString(el),
+								new TypeReference<TestMetadata>() {}
+							);
+							aux.setExerciseId(exId);
+							aux.setInputValue(
+								readFileContentAsString(
+										Paths.get(base, aux.getInputFileStringPath())
 								)
-								.collect(Collectors.toList());
+							);
+							aux.setOutputValue(
+								readFileContentAsString(
+										Paths.get(base, aux.getOutputFileStringPath())
+								)
+							);
+							return aux;
+						} catch (IOException e) {
+							e.printStackTrace();
+							return null;
+						}
+					}
+				)
+				.collect(Collectors.toList());
 		}
 
 		public List<LibraryMetadata> getExerciseLibrariesMetadata(String exId){
-				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
+			ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
 
-				return getExerciseMetadataFiles(exId, false)
-								.stream()
-								.filter(el -> LIBRARIES_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
-								.map(el -> {
-														try {
-																LibraryMetadata aux = objectMapper.readValue(
-																				readFileContentAsString(el),
-																				new TypeReference<LibraryMetadata>() {}
-																);
-																aux.setExerciseId(exId);
-																return aux;
-														} catch (IOException e) {
-																e.printStackTrace();
-																return null;
-														}
-												}
-								)
-								.collect(Collectors.toList());
+			return getExerciseMetadataFiles(exId, false)
+				.stream()
+				.filter(el -> LIBRARIES_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+				.map(el -> {
+						try {
+							LibraryMetadata aux = objectMapper.readValue(
+								readFileContentAsString(el),
+								new TypeReference<LibraryMetadata>() {}
+							);
+							aux.setExerciseId(exId);
+							return aux;
+						} catch (IOException e) {
+							e.printStackTrace();
+							return null;
+						}
+					}
+				)
+				.collect(Collectors.toList());
 		}
 
 		public List<SolutionMetadata> getExerciseSolutionsMetadata(String exId) {
-				ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				return getExerciseMetadataFiles(exId, false)
-								.stream()
-								.filter(el -> SOLUTIONS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
-								.map(el -> {
-														try {
-																SolutionMetadata aux = objectMapper.readValue(
-																				readFileContentAsString(el),
-																				new TypeReference<SolutionMetadata>() {}
-																);
-																aux.setExerciseId(exId);
-																return aux;
-														} catch (IOException e) {
-																e.printStackTrace();
-																return null;
-														}
-												}
-								)
-								.collect(Collectors.toList());
+			ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			return getExerciseMetadataFiles(exId, false)
+				.stream()
+				.filter(el -> SOLUTIONS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
+				.map(el -> {
+							try {
+								SolutionMetadata aux = objectMapper.readValue(
+									readFileContentAsString(el),
+									new TypeReference<SolutionMetadata>() {}
+								);
+								aux.setExerciseId(exId);
+								return aux;
+							} catch (IOException e) {
+								e.printStackTrace();
+								return null;
+							}
+					}
+				)
+				.collect(Collectors.toList());
 		}
 
 		private Resource getResource(String id, String filename, String folder) {
@@ -294,12 +294,13 @@ public class FileService {
 
 		public String readFileContentAsString(Path filePath)
 		{
-				StringBuilder contentBuilder = new StringBuilder();
-				try (Stream<String> stream = Files.lines(filePath, StandardCharsets.UTF_8))
-				{   stream.forEach(s -> contentBuilder.append(s).append("\n")); }
-		catch (IOException e)
-				{   e.printStackTrace();    }
-				return contentBuilder.toString();
+			StringBuilder contentBuilder = new StringBuilder();
+			try (Stream<String> stream = Files.lines(filePath, StandardCharsets.UTF_8)){
+				stream.forEach(s -> contentBuilder.append(s).append("\n"));
+			} catch (IOException e){
+				e.printStackTrace();
+			}
+			return contentBuilder.toString();
 		}
 
 		public void deleteAll() {

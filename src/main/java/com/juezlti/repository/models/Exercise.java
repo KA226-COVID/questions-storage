@@ -13,14 +13,17 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.web.multipart.MultipartFile;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 @Data
+@NoArgsConstructor
 @Document(collection = "test")
 public class Exercise {
 
 	@Id
 	private String id;
+	private String akId;
 	private String title;
 	private String module;
 	private String owner_id;
@@ -37,7 +40,6 @@ public class Exercise {
 	private LocalDateTime created_at;
 	private String statement;
 	private String hint;
-	private String akId;
 	private String difficulty;
 	private String averageGradeUnderstability;
 	private String averageGradeDifficulty;
@@ -54,13 +56,14 @@ public class Exercise {
 	//Code
 	private String exercise_language;
 	private Map<String, String> exercise_input_test;
-	private String exercise_input_grade;
 	private Map<String, String> exercise_output_test;
-	private String exercise_output_grade;
-	private String recalculateOutputs;
 
-	@Transient
-	@JsonProperty("isCodeExercise")
+
 	private boolean codeExercise;
+	
+	public Exercise(String akId, String sessionLanguage) {
+		this.akId = akId;
+		this.sessionLanguage = sessionLanguage;
+	}
 
 }

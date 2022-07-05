@@ -112,6 +112,7 @@ public class ExerciseController {
 					}catch(Exception e){
 						e.printStackTrace();
 					}
+					receivedExercise.setCodeExercise(true);
 					jsonResult = fileService.generateMetadatas(receivedExercise, recLibraries, updateExercise);
 
 				} catch (Exception ex) {
@@ -155,13 +156,7 @@ public class ExerciseController {
 
 			Optional<Exercise> repositoryExercise = Optional.ofNullable(exerciseRepository.findByAkId(akId));
 
-			if(repositoryExercise.isPresent()){
-
-				exerciseRepository.deleteById(repositoryExercise.get().getId());
-
-			}
-
-			savedExercise = createRepositoryExercise(akId, sessionLanguage);
+			savedExercise = createRepositoryExercise(repositoryExercise.orElse(new Exercise(akId, sessionLanguage)));
 			return ResponseEntity.status(HttpStatus.OK).body(savedExercise.getId());
 
 		} catch (Exception e) {
@@ -520,51 +515,62 @@ public class ExerciseController {
 
 	}
 
-	public Exercise createRepositoryExercise(String akId, String sessionLanguage){
+	public Exercise createRepositoryExercise(Exercise akExercise){
 
-				Exercise akExercise = new Exercise();
-				akExercise.setAkId(akId);
-				akExercise.setSessionLanguage(sessionLanguage);
-				ExerciseMetadata exMetadata = fileService.getExerciseMetadata(akId);
-				List<StatementMetadata> statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
-				List<SolutionMetadata> solutionsMetadata = fileService.getExerciseSolutionsMetadata(akId);
+		String akId = akExercise.getAkId();
+		String sessionLanguage = akExercise.getSessionLanguage();
+		
+		ExerciseMetadata exMetadata = fileService.getExerciseMetadata(akId);
+		List<StatementMetadata> statementsMetadata = fileService.getExerciseStatementsMetadata(akId);
+		List<SolutionMetadata> solutionsMetadata = fileService.getExerciseSolutionsMetadata(akId);
+		List<TestMetadata> testMetadatas = fileService.getExerciseTestMetadata(akId);
+		
+		akExercise.setCodeExercise(false);
 
-				SolutionMetadata firstSolution = solutionsMetadata
-						.stream()
-						.findFirst()
-						.get();
+		SolutionMetadata firstSolution = solutionsMetadata
+				.stream()
+				.findFirst()
+				.get();
+		akExercise.setExercise_solution(fileService.readFileContentAsString(Paths.get(fileService.getBaseUploadStrPath(), fileService.getExercisesStrPath(), firstSolution.getFileStringPath())));
+		
+		Integer cont = 1;
+		Map<String, String> exercise_input_test = new HashMap<String, String>();
+		Map<String, String> exercise_output_test = new HashMap<String, String>();
+		for (TestMetadata testMetadata : testMetadatas){
+			exercise_input_test.put(cont.toString(), testMetadata.getInputValue());
+			exercise_output_test.put(cont.toString(), testMetadata.getOutputValue());
+			cont++;
+		}
+		akExercise.setExercise_input_test(exercise_input_test);
+		akExercise.setExercise_output_test(exercise_output_test);
 
-				StatementMetadata firstStatement = searchFirstStatement(sessionLanguage,statementsMetadata,akId);
+		StatementMetadata firstStatement = searchFirstStatement(sessionLanguage,statementsMetadata,akId);
 
-				akExercise.setTitle(exMetadata.getTitle());
-				switch (firstStatement.getFormat().toLowerCase()){
-					case "txt" :
-					case "html":
-						Path statementPathTxt = Paths.get(
-								fileService.getBaseUploadStrPath(),
-								"exercises",
-								firstStatement.getFileStringPath()
-						).toAbsolutePath();
+		akExercise.setTitle(exMetadata.getTitle());
+		switch (firstStatement.getFormat().toLowerCase()){
+			case "txt" :
+			case "html":
+				Path statementPathTxt = Paths.get(
+						fileService.getBaseUploadStrPath(),
+						"exercises",
+						firstStatement.getFileStringPath()
+				).toAbsolutePath();
 
-						String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
-						akExercise.setStatement(htmlFilterFactory.policyFactory().sanitize(statementContentTxt));
-						break;
-					case "pdf":
-					default:
-						akExercise.setStatement("PDF");
-						break;
-				}
-				akExercise.setDifficulty(
-						capitalize(exMetadata.getDifficulty().toLowerCase())
-				);
+				String statementContentTxt = fileService.readFileContentAsString(statementPathTxt);
+				akExercise.setStatement(htmlFilterFactory.policyFactory().sanitize(statementContentTxt));
+				break;
+			case "pdf":
+			default:
+				akExercise.setStatement("PDF");
+				break;
+		}
+		akExercise.setDifficulty(capitalize(exMetadata.getDifficulty().toLowerCase()));
 
-			 	akExercise.setExercise_language(
-			 			firstSolution.getLang().toLowerCase()
-			 );
+		akExercise.setExercise_language(firstSolution.getLang().toLowerCase());
 
-			Exercise savedExercise = exerciseRepository.save(akExercise);
+		Exercise savedExercise = exerciseRepository.save(akExercise);
 
-			return savedExercise;
+		return savedExercise;
 	}
 
 }

@@ -24,7 +24,7 @@ public class TestMetadata {
     List<String> arguments;
     String inputValue;
     String outputValue;
-    List<String> feedback;
+    Object feedback;
     private String exerciseId;
 
     public TestMetadata(Exercise exercise){
@@ -38,24 +38,12 @@ public class TestMetadata {
         this.feedback = new ArrayList<String>();
     }
 
-    public String calcInputValue(String base) {
-        return Paths.get(
-                base,
-                this.getExerciseId(),
-                TESTS_FOLDER,
-                id,
-                this.getInput()
-        ).toString();
+    public String getInputFileStringPath() {
+        return this.getExerciseId() + "/" + TESTS_FOLDER + "/" + this.getId() + "/" + this.getInput();
     }
 
-    public String calcOutputValue(String base) {
-        return Paths.get(
-                base,
-                this.getExerciseId(),
-                TESTS_FOLDER,
-                id,
-                this.getOutput()
-        ).toString();
+    public String getOutputFileStringPath() {
+        return this.getExerciseId() + "/" + TESTS_FOLDER + "/" + this.getId() + "/" + this.getOutput();
     }
 
 }

@@ -3,6 +3,9 @@ package com.juezlti.repository.models.yapexil;
 import com.juezlti.repository.models.Exercise;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import static com.juezlti.repository.service.ExerciseService.SOLUTIONS_FOLDER;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -30,6 +33,12 @@ public class SolutionMetadata {
         return Paths.get(this.getSolutionStringPath());
     }
 
+    public String getFileStringPath(){
+        return this.getExerciseId() + "/" + SOLUTIONS_FOLDER + "/" + this.getId() + "/" + this.getPathname();
+    }
 
+    public Path getFilePath(){
+        return Paths.get(this.getFileStringPath());
+    }
 
 }
