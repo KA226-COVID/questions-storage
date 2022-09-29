@@ -172,8 +172,9 @@ public class FileService {
 				}
 		}
 
-		public List<StatementMetadata> getExerciseStatementsMetadata(String exId) {
+		public List<StatementMetadata> getExerciseStatementsMetadata(String exId, String lang) {
 			ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			String base = Paths.get(baseUploadStrPath, exercisesStrPath).toString();
 			return getExerciseMetadataFiles(exId, false)
 				.stream()
 				.filter(el -> STATEMENTS_FOLDER.equals(el.getParent().getParent().getFileName().toString()))
@@ -185,11 +186,17 @@ public class FileService {
 								new TypeReference<StatementMetadata>() {}
 							);
 							aux.setExerciseId(exId);
-							return aux;
+							aux.setStatementValue(readFileContentAsString(
+								Paths.get(base, aux.getFileStringPath())
+							));
+							if(lang == null || (lang != null && aux.getNat_lang().equals(lang))){
+								return aux;
+							}
 						} catch (IOException e) {
 							e.printStackTrace();
 							return null;
 						}
+						return null;
 					}
 				)
 				.collect(Collectors.toList());

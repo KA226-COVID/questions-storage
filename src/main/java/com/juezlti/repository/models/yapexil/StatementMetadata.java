@@ -15,6 +15,7 @@ public class StatementMetadata {
     String id;
     String pathname;
     String nat_lang;
+    String statementValue;
     String format = "HTML";
     private String exerciseId;
 
