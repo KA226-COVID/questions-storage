@@ -171,6 +171,10 @@ public class FileService {
 						return null;
 				}
 		}
+		
+		public List<StatementMetadata> getExerciseStatementsMetadata(String exId) {
+			return getExerciseStatementsMetadata(exId, null);
+		}
 
 		public List<StatementMetadata> getExerciseStatementsMetadata(String exId, String lang) {
 			ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
