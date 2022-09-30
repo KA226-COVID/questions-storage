@@ -202,7 +202,15 @@ public class ExerciseController {
 			@PathVariable String id, HttpServletRequest request
 	){
 		return ResponseEntity.ok()
-				.body(fileService.getExerciseStatementsMetadata(id));
+				.body(fileService.getExerciseStatementsMetadata(id, null));
+	}
+
+	@GetMapping("{id}/statements/{lang}")
+	public ResponseEntity<List<StatementMetadata>> getExerciseStatements(
+			@PathVariable String id, @PathVariable String lang, HttpServletRequest request
+	){
+		return ResponseEntity.ok()
+				.body(fileService.getExerciseStatementsMetadata(id, lang));
 	}
 
 	@GetMapping("{id}/tests")
