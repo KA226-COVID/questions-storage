@@ -112,6 +112,11 @@ public class UsageController {
 		return jsonResponse;
 	}
 
+	@GetMapping(path = "exercise_id/{idExercise}/user_id/{userId}")
+	public List<Usage> getUsageByIdExerciseInAndUserId(@PathVariable("idExercise")String idExercise,@PathVariable("userId")String userId){
+		return usageRepository.findByIdExerciseInAndUserId(idExercise, userId);
+	}
+
 	@GetMapping(path = "/date/{value}")
 	public List<Usage> getUsageDate(@PathVariable("value") String value) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
