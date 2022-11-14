@@ -19,4 +19,7 @@ public interface UsageRepository extends MongoRepository<Usage, String> {
 	
 	  List<Usage> findByIdExerciseIgnoreCase(String idExercise); 
 	  List<Usage> findByDate(Date date); 
+
+
+	  List<Usage> findByIdExerciseInAndUserId(String idExercises, String idUser);
 	}
