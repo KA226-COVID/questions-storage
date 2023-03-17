@@ -15,7 +15,6 @@ public class Test {
 	private String description;
 	private String status;
 	private boolean is_public;
-//	private String statement;
 	private List<Exercise> exercises;
 	
 	public List<Exercise> getExercises() {

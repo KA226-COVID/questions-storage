@@ -57,7 +57,7 @@ public class Exercise {
 	private String exercise_language;
 	private Map<String, String> exercise_input_test;
 	private Map<String, String> exercise_output_test;
-
+	private Map<String, Boolean> visibleTest;
 
 	private boolean codeExercise;
 	
