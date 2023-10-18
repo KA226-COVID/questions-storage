@@ -104,7 +104,7 @@ public class ExerciseController {
 					boolean updateExercise = false;
 					try{
 						if(!StringUtils.isEmpty(receivedExercise.getId())){
-							updateExercise = (usageRepository.countByIdExerciseIgnoreCase(receivedExercise.getId()) == 0);
+							updateExercise = (usageRepository.countByIdExerciseIgnoreCase(receivedExercise.getId()) > 0);
 						}
 					}catch(Exception e){
 						e.printStackTrace();
