@@ -82,7 +82,8 @@ public class ExerciseController {
 	@PostMapping(path = "/createExercise")
 	public String createExercises(@RequestParam(name = "json") String exerciseJson,
 								  @RequestParam(name = "file_field", required = false) List<MultipartFile> files,
-								  @RequestParam(name = "recuperated_libraries", required = false) String recuperatedLibraries) {
+								  @RequestParam(name = "recuperated_libraries", required = false) String recuperatedLibraries,
+								  @RequestParam(name = "update_exercise", required = false) boolean updateExercise) {
 		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 		List<Exercise> exercises = new ArrayList<>();
 		log.info("Received JSON: "+ exerciseJson);
@@ -101,14 +102,15 @@ public class ExerciseController {
 					if(recuperatedLibraries != null) { // The colon separator indicate that the first one is the exercise_id and the second one is the library_id (1212adsdad-asd:122saxcz)
 						recLibraries = objectMapper.readValue(recuperatedLibraries, new TypeReference<List<String>>(){});
 					}
-					boolean updateExercise = false;
+					/*
+					// We would need ask for answered exercises instead the wether the exercise has been valuated by students.
 					try{
 						if(!StringUtils.isEmpty(receivedExercise.getId())){
-							updateExercise = (usageRepository.countByIdExerciseIgnoreCase(receivedExercise.getId()) > 0);
+							updateExercise = (usageRepository.countByIdExerciseIgnoreCase(receivedExercise.getId()) == 0);
 						}
 					}catch(Exception e){
 						e.printStackTrace();
-					}
+					} */
 					receivedExercise.setCodeExercise(true);
 					jsonResult = fileService.generateMetadatas(receivedExercise, recLibraries, updateExercise);
 					log.info("Exercise: " + receivedExercise);
