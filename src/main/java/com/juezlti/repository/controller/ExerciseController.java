@@ -337,6 +337,8 @@ public class ExerciseController {
 		}
 		akExercise.setDifficulty(capitalize(exMetadata.getDifficulty().toLowerCase()));
 
+		akExercise.setKeywords(exMetadata.getKeywords());
+
 		akExercise.setExercise_language(firstSolution.getLang().toLowerCase());
 
 		Exercise savedExercise = exerciseRepository.save(akExercise);
